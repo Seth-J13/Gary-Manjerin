@@ -1,6 +1,10 @@
 import shapefile
 
-sf = shapefile.Reader("C:/Users/xrock/OC_Classes/AI_Project_T1/tx_2020_gen_2020_blocks/tx_2020_gen_2020_blocks.shp")
+# Change this path when you're testing
+# If we need to input files easier, we can ask user to input a path instead of hard-coding it
+default_path = "C:/Users/xrock/OC_Classes/AI_Project_T1/tx_2020_gen_2020_blocks/"
+
+sf = shapefile.Reader(default_path + "tx_2020_gen_2020_blocks.shp")
 # rec = sf.records()[0:10]
 # fields = sf.fields
 # print([x.name for x in sf.fields[1:]])
