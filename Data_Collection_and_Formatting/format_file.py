@@ -24,8 +24,19 @@ sf = shapefile.Reader(default_path + "ok_2020_gen_2020_blocks.shp")
 records = sf.records()
 shapes = sf.shapes()
 
+#temp VVVV
+fields = []
+for x in sf.fields[1:]:
+    fields.append(x.name)
+recordFirst = records[0]
+for x in range(len(fields)):
+    print(str(fields[x]) + " : " + str(recordFirst[x]))
+
+#temp ^^^^^
+
 #list for use in csv
 file = io.open("training_data.csv", 'w')
+file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
 for i in range(len(records)):
 
@@ -35,13 +46,28 @@ for i in range(len(records)):
     #separate records into variables
     #on assignment sheet: "The fields in the file are: ID, Longitude, Latitude, Population, 
         #Total Votes, Republican Vote Share, and Democratic Vote Share, in that order"
+    #0-4 Block ID, State FIPS Code, Unique Precinct Identifier, Modified Voting Age (VAP)
+    #5-10 President Candidates (5:Trump (Rep), 6:Biden (Dem), 7:Jorgensen (Lib), 8:West (Ind), 9:Simmons (Ind), 10:Pierce (Ind))
+    #11-15 Senators Candidates (11:Inhofe (Rep), 12:Broyles (Dem), 13:Murphy (Lib), 14:Farr (Ind), 15:Nesbit (Ind))
+    #16-17 Corporation Commissioner Candidates (16:Hiett (Rep), 17:Hagopian (Lib))
     lineId = record[0]
-    population = record[1]
-    presidentVotes = record[2]
-    senateVotes = record[3]
-    congressVotes = record[4]
-    republicanVotes = record[5]
-    democratVotes = record[6]
+    population = record[4]
+        
+    presidentVotes = 0
+    for x in range(6):
+        presidentVotes += float(record[x + 5])
+        
+        
+    senateVotes = 0
+    for x in range(5):
+        senateVotes += float(record[x + 11])
+    congressVotes = 0
+    for x in range(2):
+        congressVotes += float(record[x + 16])
+
+    republicanVotes = float(record[5]) + float(record[11]) + float(record[16])
+    democratVotes = float(record[6]) + float(record[12])
+
 
     # print("President Votes: " + str(presidentVotes) + " Senate Votes: " + str(senateVotes) + " Congress Votes: " + str(congressVotes))
 
@@ -71,5 +97,5 @@ for i in range(len(records)):
         rep_share = 0
         dem_share = 0
 
-    assembled_data = str(population) + "," + str(longitude) + "," + str(latitude) + "," + str(rep_share) + "," + str(dem_share) + "\n"
+    assembled_data = str(lineId) + "," + str(longitude) + "," + str(latitude) + "," + str(population) + "," + str(total_votes) + "," + str(rep_share) + "," + str(dem_share) + "\n"
     file.write(assembled_data)
