@@ -1,24 +1,75 @@
-import shapefile
+import pathlib as path
+import numpy as math
 import io as io
 
-# Change this path when you're testing
-# If we need to input files easier, we can ask user to input a path instead of hard-coding it
+import tkinter.filedialog
+import shapefile
+import os.path
+import csv
 
 #Seth's path
-# default_path = "C:/Users/xrock/OC_Classes/AI_Project_T1/tx_2020_gen_2020_blocks/"
-default_path = "C:/Users/xrock/OC_Classes/AI_Project_T1/ok_2020_gen_2020_blocks/"
+# default_path = "C:/Users/xrock/OC_Classes/AI_Project_T1/tx_2020_gen_2020_blocks/tx_2020_gen_2020_blocks.shp"
 
 #Ethan's file path
 # default_path = "C:/College/SummerClasses/"
 
-#Seth's shape file
-# sf = shapefile.Reader(default_path + "tx_2020_gen_2020_blocks.shp")
-sf = shapefile.Reader(default_path + "ok_2020_gen_2020_blocks.shp")
-    
-    
-#Ethan's code. It may or may not work, so just comment it out when you are testing your code
-#Ethan's shape file reader
-# sf = shapefile.Reader("oktraining.shp")
+# This checks the stored database of shape files in the same directory.
+# Used to save time while testing and executing
+def check_database():
+    with open("shapefiles.csv", "r") as shapefiles:
+        shapefile_list = shapefiles.read().replace("\\", "/").strip().split(",")
+        
+    shapefiles.close()
+    return shapefile_list
+
+# This searches the entire computer for shape files.
+def search_computer_for_shape_files():
+    print("Searching... (this may take a while)\n")
+    write_list = ""
+    shapefile_list = []
+    for _path in path.Path(os.path.expanduser("~")).rglob("*.shp"):
+        write_list = write_list + str(_path) + ","
+        shapefile_list.append(str(_path))
+
+    # Build a database so the search doesn't need to be conducted again.
+    with open("shapefiles.csv", "w") as shapefiles:
+        shapefiles.write(write_list[:-1])
+    shapefiles.close()
+
+    for _item in shapefile_list:
+        shapefile_list[shapefile_list.index(_item)] = _item.replace("\\", "/")
+
+    return shapefile_list
+
+while True:
+    choice = input("Choose what you'd like to do:\n1. Automatically search the computer for all shape files\n2. Upload a file in a file-picker dialog\n3. Use a database (only available after option 1 at least once)\n")
+    if choice == "1" or choice == "2" or choice == "3":
+        break
+
+# This code searches for all shape files in the whole computer and returns a list. Faster than typing a file path in
+# Tell the user we're looking for shape files.
+if choice == "1":
+    if (os.path.exists("shapefiles.csv")):
+        if (input("\nYour previous search was saved to a database! You can use that instead of checking again.\nSearch anyway? (y/n) ") == "y"):
+            shapefile_list = search_computer_for_shape_files()
+        else:
+            shapefile_list = check_database()
+    else:
+        shapefile_list = search_computer_for_shape_files()
+
+# Let the user opt to upload a file using a file-picker dialog
+elif choice == "2":
+    default_path = tkinter.filedialog.askopenfilename()
+
+# If the user neglects the whole search, instead use a database stored on the computer
+elif choice == "3" and (os.path.exists("shapefiles.csv")):
+    shapefile_list = check_database()
+
+if choice == "1" or choice == "3":    
+    print(shapefile_list)
+    default_path = shapefile_list[int(input("Please enter the index of the file you would like to use (start at 0 and count up): "))]
+
+sf = shapefile.Reader(default_path)
 
 #get records and shapes
 records = sf.records()
