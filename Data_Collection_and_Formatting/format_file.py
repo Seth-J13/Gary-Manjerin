@@ -24,7 +24,7 @@ sf = shapefile.Reader(default_path + "tx_2020_gen_2020_blocks.shp")
 #    print(str(sf.fields[i]) +  " " + str(firstRec[i]) + "\n")
     
     
-#Ethan's code. It may or may not work, so just comment it out when you are testing your code
+
 #Ethan's shape file reader
 # sf = shapefile.Reader("oktraining.shp")
 
