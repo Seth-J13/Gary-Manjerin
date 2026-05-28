@@ -1,27 +1,19 @@
 import shapefile
-import numpy as math
-import pathlib as path
+import io as io
 
 # Change this path when you're testing
 # If we need to input files easier, we can ask user to input a path instead of hard-coding it
 
 #Seth's path
-default_path = "C:/Users/xrock/OC_Classes/AI_Project_T1/tx_2020_gen_2020_blocks/"
+# default_path = "C:/Users/xrock/OC_Classes/AI_Project_T1/tx_2020_gen_2020_blocks/"
+default_path = "C:/Users/xrock/OC_Classes/AI_Project_T1/ok_2020_gen_2020_blocks/"
 
 #Ethan's file path
 # default_path = "C:/College/SummerClasses/"
 
 #Seth's shape file
-sf = shapefile.Reader(default_path + "tx_2020_gen_2020_blocks.shp")
-
-
-
-# rec = sf.records()[0:10]
-# fields = sf.fields
-# print([x.name for x in sf.fields[1:]])
-#firstRec = sf.record(1)
-#for i in range(len(firstRec)):
-#    print(str(sf.fields[i]) +  " " + str(firstRec[i]) + "\n")
+# sf = shapefile.Reader(default_path + "tx_2020_gen_2020_blocks.shp")
+sf = shapefile.Reader(default_path + "ok_2020_gen_2020_blocks.shp")
     
     
 #Ethan's code. It may or may not work, so just comment it out when you are testing your code
@@ -33,7 +25,7 @@ records = sf.records()
 shapes = sf.shapes()
 
 #list for use in csv
-training_data = []
+file = io.open("training_data.csv", 'w')
 
 for i in range(len(records)):
 
@@ -79,6 +71,5 @@ for i in range(len(records)):
         rep_share = 0
         dem_share = 0
 
-    assembled_data = [population, (longitude, latitude), rep_share, dem_share]
-    training_data.append(assembled_data)
-path.Path("training_data.csv").write_text(str(training_data))
+    assembled_data = str(population) + "," + str(longitude) + "," + str(latitude) + "," + str(rep_share) + "," + str(dem_share) + "\n"
+    file.write(assembled_data)
