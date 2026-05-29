@@ -36,7 +36,7 @@ def search_computer_for_shape_files():
     return shapefile_list
 
 while True:
-    choice = input("Choose what you'd like to do:\n1. Automatically search the computer for all shape files\n2. Upload a file in a file-picker dialog\n3. Use a database (only available after option 1 at least once)\n")
+    choice = input("Choose what you'd like to do:\n1. Automatically search the computer for all shape files\n2. Use a file-picker dialog\n3. Use Cached Shape Files (only available after option 1 at least once)\n")
     if choice == "1" or choice == "2" or choice == "3":
         break
 
