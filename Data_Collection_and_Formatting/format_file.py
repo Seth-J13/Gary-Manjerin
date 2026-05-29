@@ -103,7 +103,10 @@ for x in sf.fields[1:]: #keep
         con_end = len(fields)
 print("PS: " + str(pre_start) + " / PE: " + str(pre_end) + " | SS: " + str(sen_start) + " / SE: " + str(sen_end) + " | CS: " + str(con_start) + " / CE: " + str(con_end))
 
+for x in range(pre_end - pre_start):
+    print(str(fields[x + pre_start]))
 
+#finding where the republican/democrat candidates are in the records
 repub_places = []
 dem_places = []
 republicanVotes = 0
@@ -113,8 +116,8 @@ for x in range(len(fields)):
         repub_places.append(int(x))
     elif(str(fields[x])[6] == "D"):
         dem_places.append(int(x))
+#dev comment
 print("repub: " + str(repub_places) + " | dem: " + str(dem_places))
-
 #temp VVVVVVV
 # print("PRE: " + str(president_count) + " | USS: " + str(senators_count) + " | DEL: " + str(congress_count))
 
@@ -146,28 +149,34 @@ for i in range(len(records)):
     presidentVotes = 0
     for x in range(pre_end - pre_start):
         presidentVotes += float(record[x + pre_start])
+        # print("president votes: " + str(presidentVotes) + " for \n" + str(record) + "\n")
+   
     senateVotes = 0
     for x in range(sen_end - sen_start):
         senateVotes += float(record[x + sen_start])
+   
     congressVotes = 0
     for x in range(con_end - con_start):
         congressVotes += float(record[x + con_start])
+    
+    
     #finding num republican and democrat votes
     for x in range(len(repub_places)):
-        republicanVotes += float(record[x])
-    
+        republicanVotes += float(record[repub_places[x]])
     for x in range(len(dem_places)):
-        democratVotes += float(record[x])
+        democratVotes += float(record[dem_places[x]])
+    
 
-
-    #calculate votes
-    try:
+    #dev comment
+    # print("total votes: " + str(total_votes) + "| republicanVotes: " + str(republicanVotes) + " | demVotes: " + str(democratVotes))
+    try: #calculate votes
         total_votes = float(presidentVotes) + float(senateVotes) + float(congressVotes)
     except (ValueError, TypeError):
         total_votes = 0
 
     #check if total votes aren't zero to prevent dividing by zero
     if total_votes > 0:
+        total_votes = total_votes * record[2]
         rep_share = republicanVotes / total_votes
         dem_share = 1 - rep_share
     else:
