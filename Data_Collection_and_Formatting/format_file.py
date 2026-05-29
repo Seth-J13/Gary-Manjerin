@@ -1,17 +1,11 @@
+from math import floor
+
 import pathlib as path
-import numpy as math
 import io as io
 
 import tkinter.filedialog
 import shapefile
 import os.path
-import csv
-
-#Seth's path
-# default_path = "C:/Users/xrock/OC_Classes/AI_Project_T1/tx_2020_gen_2020_blocks/tx_2020_gen_2020_blocks.shp"
-
-#Ethan's file path
-# default_path = "C:/College/SummerClasses/"
 
 # This checks the stored database of shape files in the same directory.
 # Used to save time while testing and executing
@@ -43,6 +37,7 @@ def search_computer_for_shape_files():
 
 while True:
     choice = input("Choose what you'd like to do:\n1. Automatically search the computer for all shape files\n2. Use a file-picker dialog\n3. Use Cached Shape Files (only available after option 1 at least once)\n")
+    print("")
     if choice == "1" or choice == "2" or choice == "3":
         break
 
@@ -65,8 +60,10 @@ elif choice == "2":
 elif choice == "3" and (os.path.exists("shapefiles.csv")):
     shapefile_list = check_database()
 
-if choice == "1" or choice == "3":    
-    print(shapefile_list)
+if choice == "1" or choice == "3":  
+    common_path = os.path.commonprefix(shapefile_list)
+    for x in range(len(shapefile_list)):
+        print(str(x) + ": " + str(shapefile_list[x]).removeprefix(common_path)) 
     default_path = shapefile_list[int(input("Please enter the index of the file you would like to use (start at 0 and count up): "))]
 
 sf = shapefile.Reader(default_path)
@@ -75,52 +72,128 @@ sf = shapefile.Reader(default_path)
 records = sf.records()
 shapes = sf.shapes()
 
-#temp VVVV
+#removing magic number in repOrDem
+party = 6
+#finding the place for only necessary for the Pres, Sen, and Cong
+def repOrDem(field, field_placement):
+    if(str(field[party]) == "R"):
+        repub_places.append(int(field_placement))
+    elif(str(field[party]) == "D"):
+        dem_places.append(int(field_placement) - 1)
+    return
+
+#finding where the republican/democrat candidates are in the records
+repub_places = []
+dem_places = []
+#to store the name fields and filter out the positions 
 fields = []
-for x in sf.fields[1:]:
+#This finds the field placements for president, senators, and delegates for dynamic num state vote accuracy 
+pre_start = 0
+pre_end = 0
+sen_start = 0
+sen_end = 0
+con_start = 0
+con_end = 0
+
+#finding where the republican/democrat candidates are in the records
+repub_places = []
+dem_places = []
+#to store the name fields and filter out the positions 
+fields = []
+# Initialize votes
+republicanVotes = 0
+democratVotes = 0
+#This finds the field placements for president, senators, and delegates 
+#for dynamic num state vote accuracy 
+party = 6
+def repOrDem(s, x):
+    if(str(s[party]) == "R"):
+        repub_places.append(int(x))
+    elif(str(s[party]) == "D"):
+        dem_places.append(int(x) - 1)
+    return
+
+for x in sf.fields[1:]: #keep
     fields.append(x.name)
-recordFirst = records[0]
-for x in range(len(fields)):
-    print(str(fields[x]) + " : " + str(recordFirst[x]))
+    field = x.name if x.name.startswith("G20") else ""
 
-#temp ^^^^^
+    #local vars for simplicity
+    pre_find = field.find("PRE")
+    sen_find = field.find("USS")
+    con_find = field.find("DEL")
 
-#list for use in csv
+    #finding the starting and ending indexes for the titles
+    if(pre_find != -1 and pre_start == 0):
+        pre_start = len(fields) - 1
+        repOrDem(field, pre_start)
+    elif(pre_find != -1):
+        pre_end = len(fields)
+        repOrDem(field, pre_end)
+    if(sen_find != -1 and sen_start == 0):
+        sen_start = len(fields) - 1
+        repOrDem(field, sen_start)
+    elif(sen_find != -1):
+        sen_end = len(fields)
+        repOrDem(field, sen_end)
+    if(con_find != -1 and con_start == 0):
+        con_start = len(fields) - 1
+        repOrDem(field, con_start)
+    elif(con_find != -1):
+        con_end = len(fields)
+        repOrDem(field, con_end)
+    
+#file to csv
 file = io.open("training_data.csv", 'w')
+#adding headers for understanding the values
 file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
+global_president_votes = 0
+global_senate_votes = 0
+global_congress_votes = 0
+#cycling through the records and extracting the data and formatting it for testing and training files
 for i in range(len(records)):
-
+    
     record = records[i]
     shape = shapes[i]
-    
-    #separate records into variables
-    #on assignment sheet: "The fields in the file are: ID, Longitude, Latitude, Population, 
-        #Total Votes, Republican Vote Share, and Democratic Vote Share, in that order"
-    #0-4 Block ID, State FIPS Code, Unique Precinct Identifier, Modified Voting Age (VAP)
-    #5-10 President Candidates (5:Trump (Rep), 6:Biden (Dem), 7:Jorgensen (Lib), 8:West (Ind), 9:Simmons (Ind), 10:Pierce (Ind))
-    #11-15 Senators Candidates (11:Inhofe (Rep), 12:Broyles (Dem), 13:Murphy (Lib), 14:Farr (Ind), 15:Nesbit (Ind))
-    #16-17 Corporation Commissioner Candidates (16:Hiett (Rep), 17:Hagopian (Lib))
     lineId = record[0]
     population = record[4]
-        
+
+    #grapping the number of votes for President, Senator, and Delegates    
     presidentVotes = 0
-    for x in range(6):
-        presidentVotes += float(record[x + 5])
-        
-        
+    for x in range(pre_end - pre_start):
+        presidentVotes += float(record[x + pre_start])
+    global_president_votes += presidentVotes
+   
     senateVotes = 0
-    for x in range(5):
-        senateVotes += float(record[x + 11])
+    for x in range(sen_end - sen_start):
+        senateVotes += float(record[x + sen_start])
+    global_senate_votes += senateVotes
+   
     congressVotes = 0
-    for x in range(2):
-        congressVotes += float(record[x + 16])
+    for x in range(con_end - con_start):
+        congressVotes += float(record[x + con_start])
+    global_congress_votes += congressVotes
+    
+    #finding num republican and democrat votes
+    for x in range(len(repub_places)):
+        republicanVotes += float(record[repub_places[x]])
+    for x in range(len(dem_places)):
+        democratVotes += float(record[dem_places[x]])
+    
 
-    republicanVotes = float(record[5]) + float(record[11]) + float(record[16])
-    democratVotes = float(record[6]) + float(record[12])
+    try: #calculate votes
+        total_votes = float(global_president_votes) + float(global_senate_votes) + float(global_congress_votes)
+    except (ValueError, TypeError):
+        total_votes = 0
 
+    #check if total votes aren't zero to prevent dividing by zero
+    if total_votes > 0:
+        rep_share = republicanVotes / total_votes
+        dem_share = democratVotes / total_votes
+    else:
+        rep_share = 0
+        dem_share = 0
 
-    # print("President Votes: " + str(presidentVotes) + " Senate Votes: " + str(senateVotes) + " Congress Votes: " + str(congressVotes))
 
     #get bounding box (top left corner, bottom right corner)
     bbox = shape.bbox
@@ -134,19 +207,19 @@ for i in range(len(records)):
     longitude = (xmin + xmax) / 2
     latitude = (ymin + ymax) / 2
 
-    #calculate votes
-    try:
-        total_votes = float(presidentVotes) + float(senateVotes) + float(congressVotes)
-    except (ValueError, TypeError):
-        total_votes = 0
-
-    #check if total votes aren't zero to prevent dividing by zero
-    if total_votes > 0:
-        rep_share = republicanVotes / total_votes
-        dem_share = 1 - rep_share
-    else:
-        rep_share = 0
-        dem_share = 0
-
+    #putting file line data together
     assembled_data = str(lineId) + "," + str(longitude) + "," + str(latitude) + "," + str(population) + "," + str(total_votes) + "," + str(rep_share) + "," + str(dem_share) + "\n"
+    #writing to file
     file.write(assembled_data)
+
+    global_president_votes = 0
+    global_senate_votes = 0
+    global_congress_votes = 0
+    total_votes = 0
+    republicanVotes = 0
+    rep_share = 0
+    democratVotes = 0
+    dem_share = 0
+
+print(records[1])
+# print("President Votes: " + str(global_president_votes) + " Senate Votes: " + str(global_senate_votes) + " Congress Votes: " + str(global_congress_votes))
