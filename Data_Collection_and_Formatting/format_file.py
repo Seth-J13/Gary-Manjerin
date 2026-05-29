@@ -7,12 +7,6 @@ import shapefile
 import os.path
 import csv
 
-#Seth's path
-# default_path = "C:/Users/xrock/OC_Classes/AI_Project_T1/tx_2020_gen_2020_blocks/tx_2020_gen_2020_blocks.shp"
-
-#Ethan's file path
-# default_path = "C:/College/SummerClasses/"
-
 # This checks the stored database of shape files in the same directory.
 # Used to save time while testing and executing
 def check_database():
@@ -75,17 +69,62 @@ sf = shapefile.Reader(default_path)
 records = sf.records()
 shapes = sf.shapes()
 
-#temp VVVV
-fields = []
-for x in sf.fields[1:]:
+first_instance_found = False
+
+pre_start = 0
+pre_end = 0
+sen_start = 0
+sen_end = 0
+con_start = 0
+con_end = 0
+
+fields = [] #temp
+
+#This finds the field placements for president, senators, and delegates 
+#for dynamic num state vote accuracy 
+for x in sf.fields[1:]: #keep
     fields.append(x.name)
-recordFirst = records[0]
+    field = x.name if x.name.startswith("G20") else ""
+
+    pre_find = field.find("PRE")
+    sen_find = field.find("USS")
+    con_find = field.find("DEL")
+    if(pre_find != -1 and pre_start == 0):
+        pre_start = len(fields) - 1
+    elif(pre_find != -1):
+        pre_end = len(fields)
+    if(sen_find != -1 and sen_start == 0):
+        sen_start = len(fields) - 1
+    elif(sen_find != -1):
+        sen_end = len(fields)
+    if(con_find != -1 and con_start == 0):
+        con_start = len(fields) - 1
+    elif(con_find != -1):
+        con_end = len(fields)
+print("PS: " + str(pre_start) + " / PE: " + str(pre_end) + " | SS: " + str(sen_start) + " / SE: " + str(sen_end) + " | CS: " + str(con_start) + " / CE: " + str(con_end))
+
+
+repub_places = []
+dem_places = []
+republicanVotes = 0
+democratVotes = 0
 for x in range(len(fields)):
-    print(str(fields[x]) + " : " + str(recordFirst[x]))
+    if(str(fields[x])[6] == "R"):
+        repub_places.append(int(x))
+    elif(str(fields[x])[6] == "D"):
+        dem_places.append(int(x))
+print("repub: " + str(repub_places) + " | dem: " + str(dem_places))
+
+#temp VVVVVVV
+# print("PRE: " + str(president_count) + " | USS: " + str(senators_count) + " | DEL: " + str(congress_count))
+
+# recordFirst = records[0] #temp
+# for x in range(len(fields)): #temp
+#     print(str(fields[x]) + " : " + str(recordFirst[x]))
 
 #temp ^^^^^
 
-#list for use in csv
+#file to csv
 file = io.open("training_data.csv", 'w')
 file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
@@ -93,7 +132,6 @@ for i in range(len(records)):
 
     record = records[i]
     shape = shapes[i]
-    
     #separate records into variables
     #on assignment sheet: "The fields in the file are: ID, Longitude, Latitude, Population, 
         #Total Votes, Republican Vote Share, and Democratic Vote Share, in that order"
@@ -103,36 +141,24 @@ for i in range(len(records)):
     #16-17 Corporation Commissioner Candidates (16:Hiett (Rep), 17:Hagopian (Lib))
     lineId = record[0]
     population = record[4]
-        
+
+    #grapping the number of votes for President, Senator, and Delegates    
     presidentVotes = 0
-    for x in range(6):
-        presidentVotes += float(record[x + 5])
-        
-        
+    for x in range(pre_end - pre_start):
+        presidentVotes += float(record[x + pre_start])
     senateVotes = 0
-    for x in range(5):
-        senateVotes += float(record[x + 11])
+    for x in range(sen_end - sen_start):
+        senateVotes += float(record[x + sen_start])
     congressVotes = 0
-    for x in range(2):
-        congressVotes += float(record[x + 16])
+    for x in range(con_end - con_start):
+        congressVotes += float(record[x + con_start])
+    #finding num republican and democrat votes
+    for x in range(len(repub_places)):
+        republicanVotes += float(record[x])
+    
+    for x in range(len(dem_places)):
+        democratVotes += float(record[x])
 
-    republicanVotes = float(record[5]) + float(record[11]) + float(record[16])
-    democratVotes = float(record[6]) + float(record[12])
-
-
-    # print("President Votes: " + str(presidentVotes) + " Senate Votes: " + str(senateVotes) + " Congress Votes: " + str(congressVotes))
-
-    #get bounding box (top left corner, bottom right corner)
-    bbox = shape.bbox
-
-    xmin = bbox[0]
-    ymin = bbox[1]
-    xmax = bbox[2]
-    ymax = bbox[3]
-
-    # Get center of bounding box
-    longitude = (xmin + xmax) / 2
-    latitude = (ymin + ymax) / 2
 
     #calculate votes
     try:
@@ -148,5 +174,22 @@ for i in range(len(records)):
         rep_share = 0
         dem_share = 0
 
+
+    #get bounding box (top left corner, bottom right corner)
+    bbox = shape.bbox
+
+    xmin = bbox[0]
+    ymin = bbox[1]
+    xmax = bbox[2]
+    ymax = bbox[3]
+
+    # Get center of bounding box
+    longitude = (xmin + xmax) / 2
+    latitude = (ymin + ymax) / 2
+
+    #putting file line data together
     assembled_data = str(lineId) + "," + str(longitude) + "," + str(latitude) + "," + str(population) + "," + str(total_votes) + "," + str(rep_share) + "," + str(dem_share) + "\n"
+    #writing to file
     file.write(assembled_data)
+
+print("President Votes: " + str(presidentVotes) + " Senate Votes: " + str(senateVotes) + " Congress Votes: " + str(congressVotes))
