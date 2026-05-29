@@ -125,10 +125,12 @@ for x in sf.fields[1:]:
     
 #file to csv
 file = io.open("training_data.csv", 'w')
+#adding headers for understanding the values
 file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
+#cycling through the records and extracting the data and formatting it for testing and training files
 for i in range(len(records)):
-
+    
     record = records[i]
     shape = shapes[i]
     lineId = record[0]
