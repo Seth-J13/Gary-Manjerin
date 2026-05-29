@@ -1,11 +1,11 @@
+from math import floor
+
 import pathlib as path
-import numpy as math
 import io as io
 
 import tkinter.filedialog
 import shapefile
 import os.path
-import csv
 
 # This checks the stored database of shape files in the same directory.
 # Used to save time while testing and executing
@@ -37,6 +37,7 @@ def search_computer_for_shape_files():
 
 while True:
     choice = input("Choose what you'd like to do:\n1. Automatically search the computer for all shape files\n2. Use a file-picker dialog\n3. Use Cached Shape Files (only available after option 1 at least once)\n")
+    print("")
     if choice == "1" or choice == "2" or choice == "3":
         break
 
@@ -60,7 +61,9 @@ elif choice == "3" and (os.path.exists("shapefiles.csv")):
     shapefile_list = check_database()
 
 if choice == "1" or choice == "3":    
-    print(shapefile_list)
+    common_path = os.path.commonprefix(shapefile_list)
+    for x in range(len(shapefile_list)):
+        print(str(x) + ": " + str(shapefile_list[x]).removeprefix(common_path)) 
     default_path = shapefile_list[int(input("Please enter the index of the file you would like to use (start at 0 and count up): "))]
 
 sf = shapefile.Reader(default_path)
@@ -78,59 +81,59 @@ sen_end = 0
 con_start = 0
 con_end = 0
 
-fields = [] #temp
-
+#finding where the republican/democrat candidates are in the records
+repub_places = []
+dem_places = []
+#to store the name fields and filter out the positions 
+fields = []
+# Initialize votes
+republicanVotes = 0
+democratVotes = 0
 #This finds the field placements for president, senators, and delegates 
 #for dynamic num state vote accuracy 
+party = 6
+def repOrDem(s, x):
+    if(str(s[party]) == "R"):
+        repub_places.append(int(x))
+    elif(str(s[party]) == "D"):
+        dem_places.append(int(x) - 1)
+    return
+
 for x in sf.fields[1:]: #keep
     fields.append(x.name)
     field = x.name if x.name.startswith("G20") else ""
 
     pre_find = field.find("PRE")
     sen_find = field.find("USS")
-    con_find = field.find("DEL")
+    con_find = field.find("COC")
     if(pre_find != -1 and pre_start == 0):
         pre_start = len(fields) - 1
+        repOrDem(field, pre_start)
     elif(pre_find != -1):
         pre_end = len(fields)
+        repOrDem(field, pre_end)
     if(sen_find != -1 and sen_start == 0):
         sen_start = len(fields) - 1
+        repOrDem(field, sen_start)
     elif(sen_find != -1):
         sen_end = len(fields)
+        repOrDem(field, sen_end)
     if(con_find != -1 and con_start == 0):
         con_start = len(fields) - 1
+        repOrDem(field, con_start)
     elif(con_find != -1):
         con_end = len(fields)
+        repOrDem(field, con_end)
+
 print("PS: " + str(pre_start) + " / PE: " + str(pre_end) + " | SS: " + str(sen_start) + " / SE: " + str(sen_end) + " | CS: " + str(con_start) + " / CE: " + str(con_end))
-
-for x in range(pre_end - pre_start):
-    print(str(fields[x + pre_start]))
-
-#finding where the republican/democrat candidates are in the records
-repub_places = []
-dem_places = []
-republicanVotes = 0
-democratVotes = 0
-for x in range(len(fields)):
-    if(str(fields[x])[6] == "R"):
-        repub_places.append(int(x))
-    elif(str(fields[x])[6] == "D"):
-        dem_places.append(int(x))
-#dev comment
-print("repub: " + str(repub_places) + " | dem: " + str(dem_places))
-#temp VVVVVVV
-# print("PRE: " + str(president_count) + " | USS: " + str(senators_count) + " | DEL: " + str(congress_count))
-
-# recordFirst = records[0] #temp
-# for x in range(len(fields)): #temp
-#     print(str(fields[x]) + " : " + str(recordFirst[x]))
-
-#temp ^^^^^
 
 #file to csv
 file = io.open("training_data.csv", 'w')
 file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
+global_president_votes = 0
+global_senate_votes = 0
+global_congress_votes = 0
 for i in range(len(records)):
 
     record = records[i]
@@ -149,16 +152,17 @@ for i in range(len(records)):
     presidentVotes = 0
     for x in range(pre_end - pre_start):
         presidentVotes += float(record[x + pre_start])
-        # print("president votes: " + str(presidentVotes) + " for \n" + str(record) + "\n")
+    global_president_votes += presidentVotes
    
     senateVotes = 0
     for x in range(sen_end - sen_start):
         senateVotes += float(record[x + sen_start])
+    global_senate_votes += senateVotes
    
     congressVotes = 0
     for x in range(con_end - con_start):
         congressVotes += float(record[x + con_start])
-    
+    global_congress_votes += congressVotes
     
     #finding num republican and democrat votes
     for x in range(len(repub_places)):
@@ -170,15 +174,14 @@ for i in range(len(records)):
     #dev comment
     # print("total votes: " + str(total_votes) + "| republicanVotes: " + str(republicanVotes) + " | demVotes: " + str(democratVotes))
     try: #calculate votes
-        total_votes = float(presidentVotes) + float(senateVotes) + float(congressVotes)
+        total_votes = float(global_president_votes) + float(global_senate_votes) + float(global_congress_votes)
     except (ValueError, TypeError):
         total_votes = 0
 
     #check if total votes aren't zero to prevent dividing by zero
     if total_votes > 0:
-        total_votes = total_votes * record[2]
         rep_share = republicanVotes / total_votes
-        dem_share = 1 - rep_share
+        dem_share = democratVotes / total_votes
     else:
         rep_share = 0
         dem_share = 0
@@ -201,4 +204,14 @@ for i in range(len(records)):
     #writing to file
     file.write(assembled_data)
 
-print("President Votes: " + str(presidentVotes) + " Senate Votes: " + str(senateVotes) + " Congress Votes: " + str(congressVotes))
+    global_president_votes = 0
+    global_senate_votes = 0
+    global_congress_votes = 0
+    total_votes = 0
+    republicanVotes = 0
+    rep_share = 0
+    democratVotes = 0
+    dem_share = 0
+
+print(records[1])
+# print("President Votes: " + str(global_president_votes) + " Senate Votes: " + str(global_senate_votes) + " Congress Votes: " + str(global_congress_votes))
