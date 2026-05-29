@@ -78,10 +78,21 @@ sen_end = 0
 con_start = 0
 con_end = 0
 
-fields = [] #temp
-
+#finding where the republican/democrat candidates are in the records
+repub_places = []
+dem_places = []
+#to store the name fields and filter out the positions 
+fields = []
 #This finds the field placements for president, senators, and delegates 
 #for dynamic num state vote accuracy 
+party = 6
+def repOrDem(s, x):
+    if(str(s[party]) == "R"):
+        repub_places.append(int(x))
+    elif(str(s[party]) == "D"):
+        dem_places.append(int(x) - 1)
+    return
+
 for x in sf.fields[1:]: #keep
     fields.append(x.name)
     field = x.name if x.name.startswith("G20") else ""
@@ -91,31 +102,31 @@ for x in sf.fields[1:]: #keep
     con_find = field.find("DEL")
     if(pre_find != -1 and pre_start == 0):
         pre_start = len(fields) - 1
+        repOrDem(field, pre_start)
     elif(pre_find != -1):
         pre_end = len(fields)
+        repOrDem(field, pre_end)
     if(sen_find != -1 and sen_start == 0):
         sen_start = len(fields) - 1
+        repOrDem(field, sen_start)
     elif(sen_find != -1):
         sen_end = len(fields)
+        repOrDem(field, sen_end)
     if(con_find != -1 and con_start == 0):
         con_start = len(fields) - 1
+        repOrDem(field, con_start)
     elif(con_find != -1):
         con_end = len(fields)
+        repOrDem(field, con_end)
+    
 print("PS: " + str(pre_start) + " / PE: " + str(pre_end) + " | SS: " + str(sen_start) + " / SE: " + str(sen_end) + " | CS: " + str(con_start) + " / CE: " + str(con_end))
 
-for x in range(pre_end - pre_start):
-    print(str(fields[x + pre_start]))
-
-#finding where the republican/democrat candidates are in the records
-repub_places = []
-dem_places = []
-republicanVotes = 0
-democratVotes = 0
-for x in range(len(fields)):
-    if(str(fields[x])[6] == "R"):
-        repub_places.append(int(x))
-    elif(str(fields[x])[6] == "D"):
-        dem_places.append(int(x))
+#find the republicans and democrat positions in the records based off the fields
+# for x in range(len(fields)):
+#     if(str(fields[x])[6] == "R"):
+#         repub_places.append(int(x))
+#     elif(str(fields[x])[6] == "D"):
+#         dem_places.append(int(x))
 #dev comment
 print("repub: " + str(repub_places) + " | dem: " + str(dem_places))
 #temp VVVVVVV
@@ -159,7 +170,8 @@ for i in range(len(records)):
     for x in range(con_end - con_start):
         congressVotes += float(record[x + con_start])
     
-    
+    republicanVotes = 0
+    democratVotes = 0
     #finding num republican and democrat votes
     for x in range(len(repub_places)):
         republicanVotes += float(record[repub_places[x]])
@@ -176,9 +188,8 @@ for i in range(len(records)):
 
     #check if total votes aren't zero to prevent dividing by zero
     if total_votes > 0:
-        total_votes = total_votes * record[2]
-        rep_share = republicanVotes / total_votes
-        dem_share = 1 - rep_share
+        rep_share = float(republicanVotes / total_votes)
+        dem_share = float(1 - rep_share)
     else:
         rep_share = 0
         dem_share = 0
