@@ -60,7 +60,7 @@ elif choice == "2":
 elif choice == "3" and (os.path.exists("shapefiles.csv")):
     shapefile_list = check_database()
 
-if choice == "1" or choice == "3":    
+if choice == "1" or choice == "3":  
     common_path = os.path.commonprefix(shapefile_list)
     for x in range(len(shapefile_list)):
         print(str(x) + ": " + str(shapefile_list[x]).removeprefix(common_path)) 
@@ -72,8 +72,22 @@ sf = shapefile.Reader(default_path)
 records = sf.records()
 shapes = sf.shapes()
 
-first_instance_found = False
+#removing magic number in repOrDem
+party = 6
+#finding the place for only necessary for the Pres, Sen, and Cong
+def repOrDem(field, field_placement):
+    if(str(field[party]) == "R"):
+        repub_places.append(int(field_placement))
+    elif(str(field[party]) == "D"):
+        dem_places.append(int(field_placement) - 1)
+    return
 
+#finding where the republican/democrat candidates are in the records
+repub_places = []
+dem_places = []
+#to store the name fields and filter out the positions 
+fields = []
+#This finds the field placements for president, senators, and delegates for dynamic num state vote accuracy 
 pre_start = 0
 pre_end = 0
 sen_start = 0
@@ -103,9 +117,12 @@ for x in sf.fields[1:]: #keep
     fields.append(x.name)
     field = x.name if x.name.startswith("G20") else ""
 
+    #local vars for simplicity
     pre_find = field.find("PRE")
     sen_find = field.find("USS")
-    con_find = field.find("COC")
+    con_find = field.find("DEL")
+
+    #finding the starting and ending indexes for the titles
     if(pre_find != -1 and pre_start == 0):
         pre_start = len(fields) - 1
         repOrDem(field, pre_start)
@@ -124,27 +141,20 @@ for x in sf.fields[1:]: #keep
     elif(con_find != -1):
         con_end = len(fields)
         repOrDem(field, con_end)
-
-print("PS: " + str(pre_start) + " / PE: " + str(pre_end) + " | SS: " + str(sen_start) + " / SE: " + str(sen_end) + " | CS: " + str(con_start) + " / CE: " + str(con_end))
-
+    
 #file to csv
 file = io.open("training_data.csv", 'w')
+#adding headers for understanding the values
 file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
 global_president_votes = 0
 global_senate_votes = 0
 global_congress_votes = 0
+#cycling through the records and extracting the data and formatting it for testing and training files
 for i in range(len(records)):
-
+    
     record = records[i]
     shape = shapes[i]
-    #separate records into variables
-    #on assignment sheet: "The fields in the file are: ID, Longitude, Latitude, Population, 
-        #Total Votes, Republican Vote Share, and Democratic Vote Share, in that order"
-    #0-4 Block ID, State FIPS Code, Unique Precinct Identifier, Modified Voting Age (VAP)
-    #5-10 President Candidates (5:Trump (Rep), 6:Biden (Dem), 7:Jorgensen (Lib), 8:West (Ind), 9:Simmons (Ind), 10:Pierce (Ind))
-    #11-15 Senators Candidates (11:Inhofe (Rep), 12:Broyles (Dem), 13:Murphy (Lib), 14:Farr (Ind), 15:Nesbit (Ind))
-    #16-17 Corporation Commissioner Candidates (16:Hiett (Rep), 17:Hagopian (Lib))
     lineId = record[0]
     population = record[4]
 
@@ -171,8 +181,6 @@ for i in range(len(records)):
         democratVotes += float(record[dem_places[x]])
     
 
-    #dev comment
-    # print("total votes: " + str(total_votes) + "| republicanVotes: " + str(republicanVotes) + " | demVotes: " + str(democratVotes))
     try: #calculate votes
         total_votes = float(global_president_votes) + float(global_senate_votes) + float(global_congress_votes)
     except (ValueError, TypeError):
