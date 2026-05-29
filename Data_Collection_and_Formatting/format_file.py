@@ -1,5 +1,4 @@
 import pathlib as path
-import numpy as math
 import io as io
 
 import tkinter.filedialog
@@ -59,8 +58,10 @@ elif choice == "2":
 elif choice == "3" and (os.path.exists("shapefiles.csv")):
     shapefile_list = check_database()
 
-if choice == "1" or choice == "3":    
-    print(shapefile_list)
+if choice == "1" or choice == "3":  
+    common_path = os.path.commonprefix(shapefile_list)
+    for x in range(len(shapefile_list)):
+        print(str(x) + ": " + str(shapefile_list[x]).removeprefix(common_path)) 
     default_path = shapefile_list[int(input("Please enter the index of the file you would like to use (start at 0 and count up): "))]
 
 sf = shapefile.Reader(default_path)
