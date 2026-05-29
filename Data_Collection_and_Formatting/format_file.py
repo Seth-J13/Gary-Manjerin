@@ -1,10 +1,11 @@
+from math import floor
+
 import pathlib as path
 import io as io
 
 import tkinter.filedialog
 import shapefile
 import os.path
-import csv
 
 # This checks the stored database of shape files in the same directory.
 # Used to save time while testing and executing
@@ -36,6 +37,7 @@ def search_computer_for_shape_files():
 
 while True:
     choice = input("Choose what you'd like to do:\n1. Automatically search the computer for all shape files\n2. Use a file-picker dialog\n3. Use Cached Shape Files (only available after option 1 at least once)\n")
+    print("")
     if choice == "1" or choice == "2" or choice == "3":
         break
 
@@ -93,8 +95,25 @@ sen_end = 0
 con_start = 0
 con_end = 0
 
-for x in sf.fields[1:]:
-    #add to fields to track index of the titles
+#finding where the republican/democrat candidates are in the records
+repub_places = []
+dem_places = []
+#to store the name fields and filter out the positions 
+fields = []
+# Initialize votes
+republicanVotes = 0
+democratVotes = 0
+#This finds the field placements for president, senators, and delegates 
+#for dynamic num state vote accuracy 
+party = 6
+def repOrDem(s, x):
+    if(str(s[party]) == "R"):
+        repub_places.append(int(x))
+    elif(str(s[party]) == "D"):
+        dem_places.append(int(x) - 1)
+    return
+
+for x in sf.fields[1:]: #keep
     fields.append(x.name)
     field = x.name if x.name.startswith("G20") else ""
 
@@ -128,6 +147,9 @@ file = io.open("training_data.csv", 'w')
 #adding headers for understanding the values
 file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
+global_president_votes = 0
+global_senate_votes = 0
+global_congress_votes = 0
 #cycling through the records and extracting the data and formatting it for testing and training files
 for i in range(len(records)):
     
@@ -140,18 +162,18 @@ for i in range(len(records)):
     presidentVotes = 0
     for x in range(pre_end - pre_start):
         presidentVotes += float(record[x + pre_start])
-        # print("president votes: " + str(presidentVotes) + " for \n" + str(record) + "\n")
+    global_president_votes += presidentVotes
    
     senateVotes = 0
     for x in range(sen_end - sen_start):
         senateVotes += float(record[x + sen_start])
+    global_senate_votes += senateVotes
    
     congressVotes = 0
     for x in range(con_end - con_start):
         congressVotes += float(record[x + con_start])
+    global_congress_votes += congressVotes
     
-    republicanVotes = 0
-    democratVotes = 0
     #finding num republican and democrat votes
     for x in range(len(repub_places)):
         republicanVotes += float(record[repub_places[x]])
@@ -160,14 +182,14 @@ for i in range(len(records)):
     
 
     try: #calculate votes
-        total_votes = float(presidentVotes) + float(senateVotes) + float(congressVotes)
+        total_votes = float(global_president_votes) + float(global_senate_votes) + float(global_congress_votes)
     except (ValueError, TypeError):
         total_votes = 0
 
     #check if total votes aren't zero to prevent dividing by zero
     if total_votes > 0:
-        rep_share = float(republicanVotes / total_votes)
-        dem_share = float(1 - rep_share)
+        rep_share = republicanVotes / total_votes
+        dem_share = democratVotes / total_votes
     else:
         rep_share = 0
         dem_share = 0
@@ -190,3 +212,14 @@ for i in range(len(records)):
     #writing to file
     file.write(assembled_data)
 
+    global_president_votes = 0
+    global_senate_votes = 0
+    global_congress_votes = 0
+    total_votes = 0
+    republicanVotes = 0
+    rep_share = 0
+    democratVotes = 0
+    dem_share = 0
+
+print(records[1])
+# print("President Votes: " + str(global_president_votes) + " Senate Votes: " + str(global_senate_votes) + " Congress Votes: " + str(global_congress_votes))
