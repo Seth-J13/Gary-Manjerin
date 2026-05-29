@@ -1,5 +1,3 @@
-from math import floor
-
 import pathlib as path
 import io as io
 
@@ -35,14 +33,14 @@ def search_computer_for_shape_files():
 
     return shapefile_list
 
+# Let user decide how to input shape files
 while True:
     choice = input("Choose what you'd like to do:\n1. Automatically search the computer for all shape files\n2. Use a file-picker dialog\n3. Use Cached Shape Files (only available after option 1 at least once)\n")
     print("")
     if choice == "1" or choice == "2" or choice == "3":
         break
 
-# This code searches for all shape files in the whole computer and returns a list. Faster than typing a file path in
-# Tell the user we're looking for shape files.
+# Auto-searches for all shape files in the whole computer and returns a list. Faster than typing a file path in
 if choice == "1":
     if (os.path.exists("shapefiles.csv")):
         if (input("\nYour previous search was saved to a database! You can use that instead of checking again.\nSearch anyway? (y/n) ") == "y"):
@@ -54,57 +52,37 @@ if choice == "1":
 
 # Let the user opt to upload a file using a file-picker dialog
 elif choice == "2":
-    default_path = tkinter.filedialog.askopenfilename()
+    selected_path = tkinter.filedialog.askopenfilename()
 
 # If the user neglects the whole search, instead use a database stored on the computer
 elif choice == "3" and (os.path.exists("shapefiles.csv")):
     shapefile_list = check_database()
 
-if choice == "1" or choice == "3":  
+# Choose from list of shape files that were cached or detected
+if choice == "1" or choice == "3":    
     common_path = os.path.commonprefix(shapefile_list)
     for x in range(len(shapefile_list)):
-        print(str(x) + ": " + str(shapefile_list[x]).removeprefix(common_path)) 
-    default_path = shapefile_list[int(input("Please enter the index of the file you would like to use (start at 0 and count up): "))]
+        print(str(x) + ": " + str(shapefile_list[x])[str(shapefile_list[x]).rfind("/") + 1:]) 
+    selected_path = shapefile_list[int(input("Please enter the index of the file you would like to use (start at 0 and count up): "))]
 
-sf = shapefile.Reader(default_path)
+# Initialize shapefile reader and records/shapes
+sf = shapefile.Reader(selected_path)
 
 #get records and shapes
 records = sf.records()
 shapes = sf.shapes()
 
-#removing magic number in repOrDem
-party = 6
-#finding the place for only necessary for the Pres, Sen, and Cong
-def repOrDem(field, field_placement):
-    if(str(field[party]) == "R"):
-        repub_places.append(int(field_placement))
-    elif(str(field[party]) == "D"):
-        dem_places.append(int(field_placement) - 1)
-    return
+print("Parsing through records...")
 
-#finding where the republican/democrat candidates are in the records
-repub_places = []
-dem_places = []
-#to store the name fields and filter out the positions 
-fields = []
-#This finds the field placements for president, senators, and delegates for dynamic num state vote accuracy 
-pre_start = 0
-pre_end = 0
-sen_start = 0
-sen_end = 0
-con_start = 0
-con_end = 0
-
-#finding where the republican/democrat candidates are in the records
-repub_places = []
-dem_places = []
-#to store the name fields and filter out the positions 
-fields = []
-# Initialize votes
+# Initialize votes and lists of locations in each record
 republicanVotes = 0
 democratVotes = 0
-#This finds the field placements for president, senators, and delegates 
-#for dynamic num state vote accuracy 
+repub_places = []
+dem_places = []
+fields = []
+
+# Find the field placements for president, senators, and delegates 
+# for dynamic num state vote accuracy 
 party = 6
 def repOrDem(s, x):
     if(str(s[party]) == "R"):
@@ -113,11 +91,18 @@ def repOrDem(s, x):
         dem_places.append(int(x) - 1)
     return
 
+# Relate each field with a spot in the record format
+pre_start = 0
+pre_end = 0
+sen_start = 0
+sen_end = 0
+con_start = 0
+con_end = 0
 for x in sf.fields[1:]: #keep
     fields.append(x.name)
     field = x.name if x.name.startswith("G20") else ""
 
-    #local vars for simplicity
+    # Calculate locations of voting-groups in records
     pre_find = field.find("PRE")
     sen_find = field.find("USS")
     con_find = field.find("DEL")
@@ -141,85 +126,102 @@ for x in sf.fields[1:]: #keep
     elif(con_find != -1):
         con_end = len(fields)
         repOrDem(field, con_end)
-    
-#file to csv
-file = io.open("training_data.csv", 'w')
-#adding headers for understanding the values
-file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
-global_president_votes = 0
-global_senate_votes = 0
-global_congress_votes = 0
-#cycling through the records and extracting the data and formatting it for testing and training files
-for i in range(len(records)):
-    
-    record = records[i]
-    shape = shapes[i]
-    lineId = record[0]
-    population = record[4]
+print("Finished!")
+# Create training/testing directories if they don't already exist
+if not os.path.exists(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training"):
+    os.mkdir(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training")
+if not os.path.exists(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/testing"):
+    os.mkdir(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/testing")
 
-    #grapping the number of votes for President, Senator, and Delegates    
-    presidentVotes = 0
-    for x in range(pre_end - pre_start):
-        presidentVotes += float(record[x + pre_start])
-    global_president_votes += presidentVotes
-   
-    senateVotes = 0
-    for x in range(sen_end - sen_start):
-        senateVotes += float(record[x + sen_start])
-    global_senate_votes += senateVotes
-   
-    congressVotes = 0
-    for x in range(con_end - con_start):
-        congressVotes += float(record[x + con_start])
-    global_congress_votes += congressVotes
-    
-    #finding num republican and democrat votes
-    for x in range(len(repub_places)):
-        republicanVotes += float(record[repub_places[x]])
-    for x in range(len(dem_places)):
-        democratVotes += float(record[dem_places[x]])
-    
+print("Writing training file...")
 
-    try: #calculate votes
-        total_votes = float(global_president_votes) + float(global_senate_votes) + float(global_congress_votes)
-    except (ValueError, TypeError):
-        total_votes = 0
+# file to training csv
+with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training/" + selected_path[selected_path.rfind("/") + 1:-4] + "_train" + ".csv", 'w') as file:
+    file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
-    #check if total votes aren't zero to prevent dividing by zero
-    if total_votes > 0:
-        rep_share = republicanVotes / total_votes
-        dem_share = democratVotes / total_votes
-    else:
-        rep_share = 0
-        dem_share = 0
-
-
-    #get bounding box (top left corner, bottom right corner)
-    bbox = shape.bbox
-
-    xmin = bbox[0]
-    ymin = bbox[1]
-    xmax = bbox[2]
-    ymax = bbox[3]
-
-    # Get center of bounding box
-    longitude = (xmin + xmax) / 2
-    latitude = (ymin + ymax) / 2
-
-    #putting file line data together
-    assembled_data = str(lineId) + "," + str(longitude) + "," + str(latitude) + "," + str(population) + "," + str(total_votes) + "," + str(rep_share) + "," + str(dem_share) + "\n"
-    #writing to file
-    file.write(assembled_data)
-
+    # Totals used to calculate grand total
     global_president_votes = 0
     global_senate_votes = 0
     global_congress_votes = 0
-    total_votes = 0
-    republicanVotes = 0
-    rep_share = 0
-    democratVotes = 0
-    dem_share = 0
 
-print(records[1])
-# print("President Votes: " + str(global_president_votes) + " Senate Votes: " + str(global_senate_votes) + " Congress Votes: " + str(global_congress_votes))
+    # Main processor loop
+    for i in range(len(records)):
+
+        #separate records into variables
+        record = records[i]
+        shape = shapes[i]
+        lineId = record[0]
+        population = record[4]
+
+        #grapping the number of votes for President, Senator, and Delegates    
+        presidentVotes = 0
+        for x in range(pre_end - pre_start):
+            presidentVotes += float(record[x + pre_start])
+        global_president_votes += presidentVotes
+    
+        senateVotes = 0
+        for x in range(sen_end - sen_start):
+            senateVotes += float(record[x + sen_start])
+        global_senate_votes += senateVotes
+    
+        congressVotes = 0
+        for x in range(con_end - con_start):
+            congressVotes += float(record[x + con_start])
+        global_congress_votes += congressVotes
+        
+        #finding num republican and democrat votes
+        for x in range(len(repub_places)):
+            republicanVotes += float(record[repub_places[x]])
+        for x in range(len(dem_places)):
+            democratVotes += float(record[dem_places[x]])
+        
+        #calculate votes and shares
+        try: 
+            total_votes = float(global_president_votes) + float(global_senate_votes) + float(global_congress_votes)
+        except (ValueError, TypeError):
+            total_votes = 0
+
+        if total_votes > 0: #check if total votes aren't zero to prevent dividing by zero
+            rep_share = republicanVotes / total_votes
+            dem_share = democratVotes / total_votes
+        else:
+            rep_share = 0
+            dem_share = 0
+
+
+        #get bounding box (top left corner, bottom right corner)
+        bbox = shape.bbox
+
+        xmin = bbox[0]
+        ymin = bbox[1]
+        xmax = bbox[2]
+        ymax = bbox[3]
+
+        # Get center of bounding box
+        longitude = (xmin + xmax) / 2
+        latitude = (ymin + ymax) / 2
+
+        #putting file line data together and writing it
+        file.write(str(lineId) + "," + str(longitude) + "," + str(latitude) + "," + str(population) + "," + str(total_votes) + "," + str(rep_share) + "," + str(dem_share) + "\n")
+
+        # Reset totals to begin a new line
+        global_president_votes = 0
+        global_senate_votes = 0
+        global_congress_votes = 0
+        total_votes = 0
+        republicanVotes = 0
+        rep_share = 0
+        democratVotes = 0
+        dem_share = 0
+    print("Finished!")
+
+print("Writing test file...")
+# file to testing csv
+with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/testing/" + selected_path[selected_path.rfind("/") + 1:-4] + "_test" + ".csv", 'w') as file:
+    with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training/" + selected_path[selected_path.rfind("/") + 1:-4] + "_train" + ".csv", 'r') as trainer:
+        _ = trainer.readline()
+        for _line in trainer:
+            __line = _line.strip().split(",")
+            file.write(__line[0] + "," + __line[1] + "," + __line[2] + "," + __line[4] +  "\n")
+print("Finished!\n\nCheck your /training/ and /testing/ directories now.\nOutput files are named after the original shape file you uploaded.")
