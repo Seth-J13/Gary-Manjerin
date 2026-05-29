@@ -105,7 +105,9 @@ for x in sf.fields[1:]: #keep
     # Calculate locations of voting-groups in records
     pre_find = field.find("PRE")
     sen_find = field.find("USS")
-    con_find = field.find("COC")
+    con_find = field.find("DEL")
+
+    #finding the starting and ending indexes for the titles
     if(pre_find != -1 and pre_start == 0):
         pre_start = len(fields) - 1
         repOrDem(field, pre_start)
