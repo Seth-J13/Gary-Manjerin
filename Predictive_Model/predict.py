@@ -2,6 +2,13 @@
 import tkinter
 
 from sklearn import svm
+
+#from claude AI VVVV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+# ^^^^
+
 import numpy as np
 import os.path as osPath
 from pathlib import Path as path
@@ -31,69 +38,35 @@ def findFiles():
         print("No testing path exists")
     return training_path, testing_path
 
-# This searches the entire computer for shape files.
-def search_computer_for_training_and_testing_dirs():
-    print("Searching... (this may take a while)\n")
-    write_list = ""
-    folder_list = []
-    for _path in path(osPath.expanduser("~")).rglob("*"):
-        write_list = write_list + str(_path) + ","
-        folder_list.append(str(_path))
-
-    # Build a database so the search doesn't need to be conducted again.
-    with open("folder_list.csv", "w") as folder_lists:
-        folder_lists.write(write_list[:-1])
-    folder_lists.close()
-
-    for _item in folder_list:
-        folder_list[folder_list.index(_item)] = _item.replace("\\", "/")
-
-    return folder_list
-
-# This checks the stored database of shape files in the same directory.
-# Used to save time while testing and executing
-def check_database():
-    with open("folder_list.csv", "r") as folder_lists:
-        folder_lists = folder_lists.read().replace("\\", "/").strip().split(",")
-        
-    folder_lists.close()
-    return folder_lists
-
-
 training_path, testing_path = findFiles()
 
-#Request for training file
-# Let user decide how to input shape files
-while True:
-    choice = input("Choose what you'd like to do:\n1. Automatically search the computer for all shape files\n2. Use a file-picker dialog\n3. Use Saved CSV Files\n")
-    print("")
-    if choice == "1" or choice == "2" or choice == "3":
-        break
 
-if choice == "1":
-    if (osPath.exists("folder_list.csv")):
-        if (input("\nYour previous search was saved to a database! You can use that instead of checking again.\nSearch anyway? (y/n) ") == "y"):
-            folder_list = search_computer_for_training_and_testing_dirs()
-        else:
-            folder_list = check_database()
-    else:
-        folder_list = search_computer_for_training_and_testing_dirs()
+print("\nSelect a file to use for training and testing the model.\n")
+paths = path.rglob(path(training_path), "*.csv")
+paths_list = tuple(paths)
+num = 0
+for x in paths_list:
+    print(str(num) + ": " + str(x))
+    num += 1
 
-# Let the user opt to upload a file using a file-picker dialog
-elif choice == "2":
-    selected_path = tkinter.filedialog.askopenfilename()
+num = int(input("Please enter the index of the file you would like to use (start at 0 and count up): "))
+selected_training_path = paths_list[num]
 
-# If the user neglects the whole search, instead use a database stored on the computer
-elif choice == "3" and (osPath.exists("folder_list.csv")):
-    folder_list = check_database()
+paths = path.rglob(path(testing_path), "*.csv")
+paths_list = tuple(paths)
+selected_testing_path = paths_list[num]
 
-# Choose from list of shape files that were cached or detected
-if choice == "1" or choice == "3":    
-    common_path = osPath.commonprefix(folder_list)
-    for x in range(len(folder_list)):
-        print(str(x) + ": " + str(folder_list[x])[str(folder_list[x]).rfind("/") + 1:]) 
-    selected_path = folder_list[int(input("Please enter the index of the file you would like to use (start at 0 and count up): "))]
+#I yoinked this from claude AI VVVV
+X = path.open(selected_training_path).readlines()
+y = path.open(selected_testing_path).readlines()
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
+pipe = Pipeline([
+    ('scaler', StandardScaler()),   # always scale for SVMs!
+    ('svm',    svm.SVC(kernel='rbf', C=1.0, gamma='scale'))
+])
 
+pipe.fit(X_train, y_train)
+print(pipe.score(X_test, y_test))
 
-
+#^^^^^ AI
