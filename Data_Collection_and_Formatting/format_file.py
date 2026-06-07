@@ -138,7 +138,7 @@ print("Writing training file...")
 
 # file to training csv
 with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training/" + selected_path[selected_path.rfind("/") + 1:-4] + "_train" + ".csv", 'w') as file:
-    file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
+    # file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
     # Totals used to calculate grand total
     global_president_votes = 0
