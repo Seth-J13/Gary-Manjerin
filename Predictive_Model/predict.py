@@ -2,7 +2,7 @@
 import tkinter
 
 from sklearn import svm
-
+import array
 #from claude AI VVVV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -59,7 +59,19 @@ selected_testing_path = paths_list[num]
 #I yoinked this from claude AI VVVV
 X = path.open(selected_training_path).readlines()
 y = path.open(selected_testing_path).readlines()
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+X_array = []
+y_array = []
+for i in X:
+    tempArray = []
+    for k in i.split(","):
+        tempArray.append(k)
+    X_array.append(tempArray)
+for i in y:
+    tempArray = []
+    for k in i.split(","):
+        tempArray.append(k)
+    y_array.append(tempArray)
+X_train, X_test, y_train, y_test = train_test_split(X_array, y_array, test_size=0.2)
 
 pipe = Pipeline([
     ('scaler', StandardScaler()),   # always scale for SVMs!
