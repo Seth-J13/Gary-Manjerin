@@ -1,4 +1,4 @@
 pyshp
 pathlib
-tensorflow
 numpy
+scikit-learn
