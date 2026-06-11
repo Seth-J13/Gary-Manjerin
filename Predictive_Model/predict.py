@@ -67,10 +67,10 @@ for i in X:
         tempArray.append(k)
     X_array.append(tempArray)
 for i in y:
-    tempArray = []
-    for k in i.split(","):
-        tempArray.append(k)
-    y_array.append(tempArray)
+    # tempArray = []
+    k = i.split(",")
+    y_array.append(k[2])
+
 X_train, X_test, y_train, y_test = train_test_split(X_array, y_array, test_size=0.2)
 
 pipe = Pipeline([
