@@ -71,24 +71,35 @@ rows_visited = []
 with open(selected_training_path) as train:
     filereader = csv.reader(train)
     
+    row_n = 0
     for row in filereader:
         rows_visited.append(row_number)
         X.append([float(row[0]), float(row[1]), float(row[2])]) # Given the first 3 columns
         y.append(float(row[5])) # Predict the 6th column (5th column is just [1.0 - 4th_column])
 
-        correct_answers.append([float(row[4]), float(row[5])]) # These are used to compare predicted answers
-        
+        # Calculate normalized percentage of republican and democrat votes returned
+        if int(row[2]) != 0: # Skip and auto-set to 0 if there is no population in this block
+            row_n += 1
+            total_share = float(row[4]) + float(row[5]) # Total up vote share
+            r_percent = float(row[4]) / total_share # Calculate republican share
+            d_percent = float(row[5]) / total_share # Calculate democrat share
+            print(str(row_n) + "|" + str(total_share) + "|" + str(r_percent * 100) + "|" + str(d_percent * 100)) # Print out
+        else:
+            r_percent = 0
+            d_percent = 0
+        correct_answers.append([float(r_percent), float(d_percent)])
+
         # Storing min and max X and Y values this way greatly increases performance rather
         # than using built in functions to find the min and max of the whole array after it's built
         if float(row[5]) > max_y:
             max_y = float(row[2])
         if float(row[5]) < min_y:
-            min_y = float(row[2])
+            min_y = float(row[2]) if float(row[2]) != 0 else min_y
 
         if float(row[5]) > max_x:
             max_x = float(row[5])
         if float(row[5]) < min_x:
-            min_x = float(row[5])
+            min_x = float(row[5]) if float(row[5]) != 0 else min_x
 
         # This skips lines randomly (but never 5 times in a row)
         jumper = np.random.randint(0,4)
@@ -113,11 +124,6 @@ with open(selected_training_path) as train:
         _[2] = normalized_x[line]
         line += 1
 
-    y = np.array(y)
-    y_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(0,1))
-    normalized_y = y_scaler.fit_transform(y.reshape(-1, 1)).flatten()
-    y = normalized_y
-
 # Similar casing added for redundancy and east of use for people with different typing styles.
 # If we find this unnecessary, we can remove it later
 training_kernel = ""
@@ -132,7 +138,7 @@ prediction_model = None
 if training_kernel.lower() == 'linear':
     prediction_model = sklearn.pipeline.Pipeline([
         ('scaler', sklearn.preprocessing.StandardScaler()), # This scales everything to within significantly narrow range
-        ('svm',    sklearn.svm.LinearSVR(loss='squared_epsilon_insensitive', C=10000, epsilon=0.3))
+        ('svm',    sklearn.svm.LinearSVR(loss='squared_epsilon_insensitive', C=100, epsilon=0.3))
     ])
 elif training_kernel.lower() == 'poly':
     prediction_model = sklearn.pipeline.Pipeline([
@@ -154,14 +160,16 @@ with open(selected_testing_path) as test:
     filereader = csv.reader(test)
     line = 0
     correct_index = 0 # This tracks the index of the correct_answers array instead of the line number
+
+    democrats = 0.0
+    republicans = 0.0
     for row in filereader:
         if line in rows_visited:
             if float(row[2]) == 0.0: # This is used to breeze past areas with 0 population
                 republicans = 0.0
                 democrats = 0.0
             else:
-                democrats_raw = prediction_model.predict([[float(row[0]), float(row[1]), float(row[2])]])
-                democrats = y_scaler.inverse_transform(democrats_raw.reshape(-1, 1)).flatten()
+                democrats = prediction_model.predict([[float(row[0]), float(row[1]), float(row[2])]])
                 republicans = 1.0 - democrats
             if type(democrats) == np.ndarray:
                 print(f"Predicted Vote Shares: {republicans[0]*100:.2f}% Republican | {democrats[0]*100:.2f}% Democrat | Actual Vote Shares: {correct_answers[correct_index][0]*100:.2f}% Republican | {correct_answers[correct_index][1]*100:.2f}% Democrat")
