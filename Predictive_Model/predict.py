@@ -1,7 +1,5 @@
-import tkinter
-
 import csv
-import math
+
 import numpy as np
 import os.path as osPath
 import sklearn as sklearn
@@ -102,17 +100,6 @@ with open(selected_training_path) as train:
                 filereader.__next__()
             except StopIteration:
                 continue
-
-    # Normalize our Population and Predicted Democrat Values for statistical stability
-    # for _ in X:
-    #     if _[2] == 0: # Ignore if 0 population
-    #         break
-    #     else:
-    #         _[2] = math.log(1+_[2]) # Normalize population
-    #     if _[3] == 0: # Ignore if 0 votes
-    #         break
-    #     else:
-    #         _[3] = math.log(1+_[3]) # Normalize vote count
 
 # List to use the same selection scheme as before, but for kernels
 kernels = ["linear", "rbf"]
