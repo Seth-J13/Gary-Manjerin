@@ -74,55 +74,59 @@ with open(selected_training_path) as train:
     row_n = 0
     for row in filereader:
         rows_visited.append(row_number)
-        X.append([float(row[0]), float(row[1]), float(row[2])]) # Given the first 3 columns
-        y.append(float(row[5])) # Predict the 6th column (5th column is just [1.0 - 4th_column])
+        X.append([float(row[0]), float(row[1]), float(row[2]), float(row[3])]) # Given the first 3 columns
 
         # Calculate normalized percentage of republican and democrat votes returned
-        if int(row[2]) != 0: # Skip and auto-set to 0 if there is no population in this block
-            row_n += 1
+        if float(row[3]) != 0.0 and int(row[2]) != 0: # Skip and auto-set to 0 if there is no population in this block
             total_share = float(row[4]) + float(row[5]) # Total up vote share
-            r_percent = float(row[4]) / total_share # Calculate republican share
-            d_percent = float(row[5]) / total_share # Calculate democrat share
-            print(str(row_n) + "|" + str(total_share) + "|" + str(r_percent * 100) + "|" + str(d_percent * 100)) # Print out
+            r_percent = float(row[4]) / float(total_share) # Calculate republican share
+            d_percent = float(row[5]) / float(total_share) # Calculate democrat share
+            y.append(d_percent) # Predict the 6th column (5th column is just [1.0 - 4th_column])
         else:
             r_percent = 0
             d_percent = 0
+            y.append(d_percent)
         correct_answers.append([float(r_percent), float(d_percent)])
 
         # Storing min and max X and Y values this way greatly increases performance rather
         # than using built in functions to find the min and max of the whole array after it's built
         if float(row[5]) > max_y:
-            max_y = float(row[2])
+            max_y = float(row[5])
         if float(row[5]) < min_y:
-            min_y = float(row[2]) if float(row[2]) != 0 else min_y
+            min_y = float(row[5]) if float(row[5]) != 0 else min_y
 
-        if float(row[5]) > max_x:
-            max_x = float(row[5])
-        if float(row[5]) < min_x:
-            min_x = float(row[5]) if float(row[5]) != 0 else min_x
+        if float(row[2]) > max_x:
+            max_x = float(row[2])
+        if float(row[2]) < min_x:
+            min_x = float(row[2]) if float(row[2]) != 0 else min_x
 
-        # This skips lines randomly (but never 5 times in a row)
-        jumper = np.random.randint(0,4)
-        for _ in range(jumper):
-            try:
-                filereader.__next__()
-            except StopIteration:
-                break
-        row_number += jumper + 1 # Include random jump and this line to row number
+        # # This skips lines randomly (but never 5 times in a row)
+        # jumper = np.random.randint(0,4)
+        # for _ in range(jumper):
+        #     try:
+        #         filereader.__next__()
+        #     except StopIteration:
+        #         break
+        # row_number += jumper + 1 # Include random jump and this line to row number
 
     # Normalize our Population and Predicted Democrat Values for statistical stability
     normalized_x = []
     for _ in X:
-        if _[2] == 0:
-            normalized_x.append(0.0)
+        if _[2] == 0: # Ignore if 0 population
+            break
         else:
-            normalized_x.append(normalize(_[2], min_x, max_x)*100)
+            _[2] = math.log(1+_[2]) # Normalize population
+        if _[3] == 0: # Ignore if 0 votes
+            break
+        else:
+            _[3] = math.log(1+_[3]) # Normalize vote count
+        
     
-    # This loop scheme greatly increases perfomance at the cost of being ugly
-    line = 0
-    for _ in X:
-        _[2] = normalized_x[line]
-        line += 1
+    # # This loop scheme greatly increases perfomance at the cost of being ugly
+    # line = 0
+    # for _ in X:
+    #     _[2] = normalized_x[line]
+    #     line += 1
 
 # Similar casing added for redundancy and east of use for people with different typing styles.
 # If we find this unnecessary, we can remove it later
@@ -138,7 +142,7 @@ prediction_model = None
 if training_kernel.lower() == 'linear':
     prediction_model = sklearn.pipeline.Pipeline([
         ('scaler', sklearn.preprocessing.StandardScaler()), # This scales everything to within significantly narrow range
-        ('svm',    sklearn.svm.LinearSVR(loss='squared_epsilon_insensitive', C=100, epsilon=0.3))
+        ('svm',    sklearn.svm.LinearSVR(loss='squared_epsilon_insensitive', C=1000, epsilon=0.1))
     ])
 elif training_kernel.lower() == 'poly':
     prediction_model = sklearn.pipeline.Pipeline([
@@ -164,17 +168,17 @@ with open(selected_testing_path) as test:
     democrats = 0.0
     republicans = 0.0
     for row in filereader:
-        if line in rows_visited:
-            if float(row[2]) == 0.0: # This is used to breeze past areas with 0 population
-                republicans = 0.0
-                democrats = 0.0
-            else:
-                democrats = prediction_model.predict([[float(row[0]), float(row[1]), float(row[2])]])
-                republicans = 1.0 - democrats
-            if type(democrats) == np.ndarray:
-                print(f"Predicted Vote Shares: {republicans[0]*100:.2f}% Republican | {democrats[0]*100:.2f}% Democrat | Actual Vote Shares: {correct_answers[correct_index][0]*100:.2f}% Republican | {correct_answers[correct_index][1]*100:.2f}% Democrat")
-            else:
-                print(f"Predicted Vote Shares: {republicans*100:.2f}% Republican | {democrats*100:.2f}% Democrat | Actual Vote Shares: {correct_answers[correct_index][0]*100:.2f}% Republican | {correct_answers[correct_index][1]*100:.2f}% Democrat")
-            correct_index += 1
+        # if line in rows_visited:
+        if float(row[2]) == 0.0: # This is used to breeze past areas with 0 population
+            republicans = 0.0
+            democrats = 0.0
+        else:
+            democrats = prediction_model.predict([[float(row[0]), float(row[1]), float(row[2]), float(row[3])]])
+            republicans = 1.0 - democrats
+        if type(democrats) == np.ndarray:
+            print(f"Predicted Vote Shares: {republicans[0]*100:.2f}% Republican | {democrats[0]*100:.2f}% Democrat | Actual Vote Shares: {correct_answers[correct_index][0]*100:.2f}% Republican | {correct_answers[correct_index][1]*100:.2f}% Democrat")
+        else:
+            print(f"Predicted Vote Shares: {republicans*100:.2f}% Republican | {democrats*100:.2f}% Democrat | Actual Vote Shares: {correct_answers[correct_index][0]*100:.2f}% Republican | {correct_answers[correct_index][1]*100:.2f}% Democrat")
+        correct_index += 1
         line += 1
 
