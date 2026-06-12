@@ -34,7 +34,7 @@ paths = path.rglob(path(training_path), "*.csv")
 paths_list = tuple(paths)
 num = 0
 for x in paths_list:
-    print(str(num) + ": " + str(x))
+    print(str(num) + ": " + str(x)[-33:])
     num += 1
 
 # Let the use select which training and testing file to use
@@ -145,7 +145,7 @@ with open(selected_testing_path) as test:
     democrats = 0.0
     republicans = 0.0
     deviations = []
-
+    result_list = []
     # Test through every line in the CSV
     for row in filereader:
         if float(row[2]) == 0.0: # This is used to breeze past areas with 0 population
@@ -153,13 +153,13 @@ with open(selected_testing_path) as test:
             democrats = 0.0
         else:
             democrats = prediction_model.predict([[float(row[0]), float(row[1]), float(row[2]), float(row[3])]])[0] # Predict vote share
-
             # Clamp democrat results to between 0.01% and 99.99%
             democrats = 0.9999 if democrats > 0.9999 else democrats
             democrats = 0.0001 if democrats < 0.0001 else democrats
 
             # Calculate republican votes based on democrats (ignore other parties since that would require four separate Support-Vector-Regressors)
             republicans = 1.0 - democrats
+            result_list.append(str(row[0]) + "," + str(row[1]) + "," + str(row[2]) + "," + str(democrats) + "," + str(republicans) + "\n")
 
             # Calculate deviation from correct scores by updating current deviation with the average between the current and previous deviation
             deviations.append(abs(correct_answers[correct_index][1] - democrats)/2)
@@ -174,3 +174,14 @@ with open(selected_testing_path) as test:
         total_deviation = total_deviation + d
     total_deviation = total_deviation/deviations.__len__()
     print(f"Final Accuracy: {(1-total_deviation)*100:.2f}%")
+
+# find or create a place to store results
+if not osPath.exists(str(path.cwd()) + "\\prediction"):
+    path.mkdir(str(path.cwd()) + "\\prediction")
+prediction_path = str(path.cwd()) + "\\prediction"
+
+# opening or creating a results.csv
+with open(((str(path.cwd())) + "/prediction/" + str(selected_training_path).removeprefix(str(path.cwd().parent) + "\\Data_Collection_and_Formatting\\training").removesuffix("train.csv") + "results.csv").replace("\\", "/"), "+w") as result:
+    for line in result_list:
+        result.write(line)
+print("finished")
