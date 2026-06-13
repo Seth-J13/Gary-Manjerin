@@ -203,7 +203,7 @@ with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/tra
         latitude = (ymin + ymax) / 2
 
         #putting file line data together and writing it
-        file.write(str(lineId) + "," + str(longitude) + "," + str(latitude) + "," + str(population) + "," + str(total_votes) + "," + str(rep_share) + "," + str(dem_share) + "\n")
+        file.write(str(longitude) + "," + str(latitude) + "," + str(population) + "," + str(total_votes) + "," + str(rep_share) + "," + str(dem_share) + "\n")
 
         # Reset totals to begin a new line
         global_president_votes = 0
@@ -219,9 +219,10 @@ with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/tra
 print("Writing test file...")
 # file to testing csv
 with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/testing/" + selected_path[selected_path.rfind("/") + 1:-4] + "_test" + ".csv", 'w') as file:
-    with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training/" + selected_path[selected_path.rfind("/") + 1:-4] + "_train" + ".csv", 'r') as trainer:
-        _ = trainer.readline()
+    with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training/" + selected_path[selected_path.rfind("/") + 1:-4] + "_train" + ".csv", 'r') as  trainer:
+        # _ = trainer.readline()
         for _line in trainer:
             __line = _line.strip().split(",")
-            file.write(__line[0] + "," + __line[1] + "," + __line[2] + "," + __line[4] +  "\n")
+            #longitude , latitude , population, total votes
+            file.write(__line[0] + "," + __line[1] + "," + __line[2] + "," + __line[3] +  "\n")
 print("Finished!\n\nCheck your /training/ and /testing/ directories now.\nOutput files are named after the original shape file you uploaded.")
