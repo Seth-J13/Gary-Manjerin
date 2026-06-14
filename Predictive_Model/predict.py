@@ -101,7 +101,8 @@ with open(selected_training_path) as train:
             except StopIteration:
                 continue
 
-# List to use the same selection scheme as before, but for kernels
+# List to use the same selection scheme as before, but for kernels; this lets us add other kernels in the future in case we want/need them
+# Also lets the user easily add kernels by appending to this array of strings
 kernels = ["linear", "rbf"]
 kernel_descriptions = [" (fast but less accurate)", " (slow but more accurate)"]
 print("\nSelect a kernel (learning style) to train the predictive model on:\n")
@@ -123,7 +124,7 @@ if training_kernel == 'linear':
         ('scaler', sklearn.preprocessing.StandardScaler()), # This scales everything to within significantly narrow range
         ('svm',    sklearn.svm.LinearSVR(loss='squared_epsilon_insensitive', C=1.5, epsilon=0.1))
     ])
-else:
+else: # In case other kernels are ever added in the future, just convert the kernel to lowercase so we can use it
     prediction_model = sklearn.pipeline.Pipeline([
         ('scaler', sklearn.preprocessing.StandardScaler()), # This scales everything to within significantly narrow range
         ('svm',    sklearn.svm.SVR(kernel=training_kernel.lower(), C=10, gamma=0.1))
@@ -151,6 +152,7 @@ with open(selected_testing_path) as test:
         if float(row[2]) == 0.0: # This is used to breeze past areas with 0 population
             republicans = 0.0
             democrats = 0.0
+            result_list.append(str(row[0]) + "," + str(row[1]) + "," + str(row[2]) + "," + str(democrats) + "," + str(republicans) + "\n")
         else:
             democrats = prediction_model.predict([[float(row[0]), float(row[1]), float(row[2]), float(row[3])]])[0] # Predict vote share
             # Clamp democrat results to between 0.01% and 99.99%
@@ -173,7 +175,7 @@ with open(selected_testing_path) as test:
     for d in deviations:
         total_deviation = total_deviation + d
     total_deviation = total_deviation/deviations.__len__()
-    print(f"Final Accuracy: {(1-total_deviation)*100:.2f}%")
+    print(f"Final Accuracy: {(1-total_deviation*2)*100:.2f}%")
 
 # find or create a place to store results
 if not osPath.exists(str(path.cwd()) + "\\prediction"):
