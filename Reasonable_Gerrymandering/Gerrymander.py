@@ -67,4 +67,4 @@ with open(result_files[choice], "r") as state:
     highest_pop = 0
     for block in state:
         highest_pop = int(block[2]) if highest_pop < int(block[2]) else highest_pop
-    print(highest_pop)
+    print("The highest population is: " + highest_pop)
