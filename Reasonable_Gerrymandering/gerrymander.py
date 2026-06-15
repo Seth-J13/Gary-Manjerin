@@ -60,7 +60,10 @@ democrats, republicans = GetPartyDistricts(districts)
 # Iterating through the state file and beginning to gerrymander
 with open(result_files[choice], "r") as state:
     #longtitude[0], latitude[1], population[2], democrat share[3], republican share[4]
+    list_of_blocks = []
     highest_pop = 0
     for block in state:
+        block = block.split(",")
+        list_of_blocks.append(block)
         highest_pop = int(block[2]) if highest_pop < int(block[2]) else highest_pop
     print(highest_pop)
