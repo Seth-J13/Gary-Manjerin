@@ -20,25 +20,17 @@ def GetDistricts():
         #-->input a non-number just to ragebait me
         try: 
             #prompt the user for the number of districts
-            numberOfDistricts = int(input("How many disctricts do you want?: "))
-
-            #check for negative numbers/zeroes
-            if(numberOfDistricts <= 0):
-                print("You can't have 0 or a negative amount of districts.")
-                continue
-
+            while(True):
+                numberOfDistricts = int(input("How many disctricts do you want?: "))
+                #check for negative numbers/zeroes
+                if(numberOfDistricts <= 0):
+                    print("You can't have 0 or a negative amount of districts.")
+                else:
+                    break
             return numberOfDistricts
         except ValueError:
             print("Bro, the prompt clearly said to give a NUMBER!")
 ###################################################################################################
-
-#Start of program, get the files and ask which files to use
-result_files = GetFiles()
-num = 0
-for x in result_files:
-    print(str(num) + ": " + str(x)[-35:])
-    num += 1
-
 def GetPartyDistricts(districts):
     while True:
         try: 
@@ -51,6 +43,14 @@ def GetPartyDistricts(districts):
             return numDems, numReps
         except ValueError:
             print("Please input a number next time")
+###################################################################################################
+
+#Start of program, get the files and ask which files to use
+result_files = GetFiles()
+num = 0
+for x in result_files:
+    print(str(num) + ": " + str(x)[-35:])
+    num += 1
 
 
 result_file = GetFiles()
