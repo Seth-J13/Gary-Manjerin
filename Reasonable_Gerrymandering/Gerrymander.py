@@ -57,3 +57,7 @@ choice = int(input("\nWhich state would you like to gerrymander?\n"))
 districts = GetDistricts()
 
 democrats, republicans = GetPartyDistricts(districts)
+with open(result_files[choice], "r") as state:
+    #longtitude, latitude, population, democrat share, republican share
+    for block in state:
+        print(block)
