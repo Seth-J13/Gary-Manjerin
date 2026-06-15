@@ -48,7 +48,7 @@ def GetPartyDistricts(districts):
 def find_lowest(high_pops):
     min = tuple([0, -1])
     for pop in high_pops:
-        if min[1] < 0 or min > pop[1]:
+        if min[1] < 0 or min[1] > pop[1]:
             min = tuple(pop)
     return min, list(high_pops).index(min)
 ###################################################################################################
@@ -72,11 +72,19 @@ with open(result_files[choice], "r") as state:
     highest_pops = []
     # Separates the blocks and their values into a 2D array(list) and finds number of democrat districts of higest district populations
     for block in state:
+        # getting data into a usable array
         block = block.split(",")
+
+        # putting data into readable and useable vars
         id = int(block[0])
+        lon = float(block[1])
+        lat = float(block[2])
         population = int(block[3])
-        
-        list_of_blocks.append(block)
+        rep_share = float(block[4])
+        dem_share = float(block[5])
+
+        # finding the higest N populations
+        list_of_blocks.append([id, lon, lat, population, rep_share, dem_share])
         if len(highest_pops) < democrats:
             highest_pops.append(tuple([id, population]))
         else:
