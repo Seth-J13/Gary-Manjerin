@@ -35,7 +35,7 @@ def GetPartyDistricts(districts):
     while True:
         try: 
             numDems = int(input("How many of those disctricts do you want to be Democrat?: "))
-            if(districts - numDems < 0):
+            if(districts - numDems <= 0):
                 print("Too many democrat districts")
                 continue
             
@@ -52,8 +52,8 @@ for x in result_files:
     print(str(num) + ": " + str(x)[-35:])
     num += 1
 
+choice = int(input("\nWhich state would you like to gerrymander?\n"))
 
-result_file = GetFiles()
 districts = GetDistricts()
 
 democrats, republicans = GetPartyDistricts(districts)
