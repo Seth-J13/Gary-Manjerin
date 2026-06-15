@@ -18,6 +18,7 @@ def GetFiles():
     return
 
 def GetDistricts():
+    #keeps the user in the loop until they successfully submit a valid input
     while True: 
         #Ethan: I can't believe I have to do a try/catch because some idiot is going to -->
         #-->input a non-number just to ragebait me
@@ -35,8 +36,10 @@ def GetDistricts():
             print("Bro, the prompt clearly said to give a NUMBER!")
 
 def GetPartyDistricts(districts):
+    #keeps the user in the loop until they successfully submit a valid input
     while True:
         try: 
+            #since we are using a total - number of democrats, we don't need a democrat and republican input
             numDems = int(input("How many of those disctricts do you want to be Democrat?: "))
             if(districts - numDems < 0):
                 print("Too many democrat districts")
