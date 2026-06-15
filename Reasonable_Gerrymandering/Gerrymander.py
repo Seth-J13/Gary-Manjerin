@@ -39,6 +39,21 @@ for x in result_files:
     print(str(num) + ": " + str(x)[-35:])
     num += 1
 
+def GetPartyDistricts(districts):
+    while True:
+        try: 
+            numDems = int(input("How many of those disctricts do you want to be Democrat?: "))
+            if(districts - numDems < 0):
+                print("Too many democrat districts")
+                continue
+            
+            numReps = districts - numDems
+            return numDems, numReps
+        except ValueError:
+            print("Please input a number next time")
+
 
 result_file = GetFiles()
 districts = GetDistricts()
+
+democrats, republicans = GetPartyDistricts(districts)
