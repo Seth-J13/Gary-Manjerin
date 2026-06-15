@@ -55,9 +55,12 @@ for x in result_files:
 choice = int(input("\nWhich state would you like to gerrymander?\n"))
 
 districts = GetDistricts()
-
 democrats, republicans = GetPartyDistricts(districts)
+
+# Iterating through the state file and beginning to gerrymander
 with open(result_files[choice], "r") as state:
-    #longtitude, latitude, population, democrat share, republican share
+    #longtitude[0], latitude[1], population[2], democrat share[3], republican share[4]
+    highest_pop = 0
     for block in state:
-        print(block)
+        highest_pop = int(block[2]) if highest_pop < int(block[2]) else highest_pop
+    print(highest_pop)
