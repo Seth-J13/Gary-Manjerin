@@ -1,27 +1,12 @@
-# import tensorflow as tf
-import tkinter
 
-# #from claude AI VVVV
-# from sklearn.pipeline import Pipeline
-# from sklearn.preprocessing import StandardScaler
-# from sklearn.model_selection import train_test_split
-# # ^^^^
-
-import csv
-import math
-import numpy as np
 import os.path as osPath
-import sklearn as sklearn
-from pathlib import Path as path
+import pathlib as path
 
-
-training_path = ""
-testing_path = ""
-
-#copying the file finding code from part 2
-def findFiles():
-    working_dir = path.cwd()
-    working_dir = working_dir.parent.as_posix() + "/Data_Collection_and_Formatting"
+def GetFiles():
+    working_dir = path.cwd() # Get current file path
+    working_dir = working_dir.parent.as_posix() + "/Data_Collection_and_Formatting" # Modify for navigation
+    
+    # If the previous folder exists on the computer already, add the training and testing folders
     if(osPath.exists(working_dir)):
         training_path = working_dir + "/training"
     else:
@@ -30,5 +15,25 @@ def findFiles():
         testing_path = working_dir + "/testing"
     else:
         print("No testing path exists")
-    return training_path, testing_path
-training_path, testing_path = findFiles()
+    return
+
+def GetDistricts():
+    while True: 
+        #Ethan: I can't believe I have to do a try/catch because some idiot is going to -->
+        #-->input a non-number just to ragebait me
+        try: 
+            #prompt the user for the number of districts
+            numberOfDistricts = int(input("How many disctricts do you want?: "))
+
+            #check for negative numbers/zeroes
+            if(numberOfDistricts <= 0):
+                print("You can't have 0 or a negative amount of districts.")
+                continue
+
+            return numberOfDistricts
+        except ValueError:
+            print("Bro, the prompt clearly said to give a NUMBER!")
+
+
+result_file = GetFiles()
+districts = GetDistricts()
