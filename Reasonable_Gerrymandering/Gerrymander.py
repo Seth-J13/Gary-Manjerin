@@ -51,6 +51,7 @@ def GetPartyDistricts(districts):
 #Start of program, get the files and ask which files to use
 result_files = GetFiles()
 num = 0
+#prints out the list of files.
 for x in result_files:
     print(str(num) + ": " + str(x)[-35:])
     num += 1
