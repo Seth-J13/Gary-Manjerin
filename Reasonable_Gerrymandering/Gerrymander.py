@@ -34,6 +34,21 @@ def GetDistricts():
         except ValueError:
             print("Bro, the prompt clearly said to give a NUMBER!")
 
+def GetPartyDistricts(districts):
+    while True:
+        try: 
+            numDems = int(input("How many of those disctricts do you want to be Democrat?: "))
+            if(districts - numDems < 0):
+                print("Too many democrat districts")
+                continue
+            
+            numReps = districts - numDems
+            return numDems, numReps
+        except ValueError:
+            print("Please input a number next time")
+
 
 result_file = GetFiles()
 districts = GetDistricts()
+
+democrats, republicans = GetPartyDistricts(districts)
