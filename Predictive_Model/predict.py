@@ -147,12 +147,13 @@ with open(selected_testing_path) as test:
     republicans = 0.0
     deviations = []
     result_list = []
+    id = 0
     # Test through every line in the CSV
     for row in filereader:
         if float(row[2]) == 0.0: # This is used to breeze past areas with 0 population
             republicans = 0.0
             democrats = 0.0
-            result_list.append(str(row[0]) + "," + str(row[1]) + "," + str(row[2]) + "," + str(democrats) + "," + str(republicans) + "\n")
+            result_list.append(str(id) + "," + str(row[0]) + "," + str(row[1]) + "," + str(row[2]) + "," + str(democrats) + "," + str(republicans) + "\n")
         else:
             democrats = prediction_model.predict([[float(row[0]), float(row[1]), float(row[2]), float(row[3])]])[0] # Predict vote share
             # Clamp democrat results to between 0.01% and 99.99%
@@ -161,13 +162,12 @@ with open(selected_testing_path) as test:
 
             # Calculate republican votes based on democrats (ignore other parties since that would require four separate Support-Vector-Regressors)
             republicans = 1.0 - democrats
-            result_list.append(str(row[0]) + "," + str(row[1]) + "," + str(row[2]) + "," + str(democrats) + "," + str(republicans) + "\n")
-
+            result_list.append(str(id) + "," + str(row[0]) + "," + str(row[1]) + "," + str(row[2]) + "," + str(democrats) + "," + str(republicans) + "\n")
             # Calculate deviation from correct scores by updating current deviation with the average between the current and previous deviation
             deviations.append(abs(correct_answers[correct_index][1] - democrats)/2)
 
             print(f"Predicted Vote Shares: {republicans*100:.2f}% Republican | {democrats*100:.2f}% Democrat\t\tActual Vote Shares: {correct_answers[correct_index][0]*100:.2f}% Republican | {correct_answers[correct_index][1]*100:.2f}% Democrat\nCurrent Deviation: {abs(correct_answers[correct_index][1] - democrats)*100:.2f}%\n")
-        
+        id += 1
         correct_index += 1 # This updates what index of the correct_answers list we're on
 
     # Print results

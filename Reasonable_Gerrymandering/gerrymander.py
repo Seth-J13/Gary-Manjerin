@@ -1,6 +1,7 @@
-
 import os.path as osPath
 from pathlib import Path as path
+
+
 ###################################################################################################
 # Get Files is the starting function that retrieves the csv result files from the previous part
 # It returns a iterable tuple for the program to use
@@ -44,7 +45,13 @@ def GetPartyDistricts(districts):
         except ValueError:
             print("Please input a number next time")
 ###################################################################################################
-
+def find_lowest(high_pops):
+    min = tuple([0, -1])
+    for pop in high_pops:
+        if min[1] < 0 or min > pop[1]:
+            min = tuple(pop)
+    return min, list(high_pops).index(min)
+###################################################################################################
 #Start of program, get the files and ask which files to use
 result_files = GetFiles()
 num = 0
@@ -59,11 +66,25 @@ democrats, republicans = GetPartyDistricts(districts)
 
 # Iterating through the state file and beginning to gerrymander
 with open(result_files[choice], "r") as state:
-    #longtitude[0], latitude[1], population[2], democrat share[3], republican share[4]
+    # the formatting of each block VVV
+    # id[0], longtitude[1], latitude[2], population[3], democrat share[4], republican share[5]
     list_of_blocks = []
-    highest_pop = 0
+    highest_pops = []
+    # Separates the blocks and their values into a 2D array(list) and finds number of democrat districts of higest district populations
     for block in state:
         block = block.split(",")
+        id = int(block[0])
+        population = int(block[3])
+        
         list_of_blocks.append(block)
-        highest_pop = int(block[2]) if highest_pop < int(block[2]) else highest_pop
-    print(highest_pop)
+        if len(highest_pops) < democrats:
+            highest_pops.append(tuple([id, population]))
+        else:
+            lowest, index = find_lowest(highest_pops)
+            if(population > lowest[1]):
+                highest_pops[index] = tuple([id, population])
+    # Using the highest populations we begin to seed the districts onto the map
+    
+                
+
+
