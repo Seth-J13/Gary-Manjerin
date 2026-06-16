@@ -66,8 +66,15 @@ with open(result_files[choice], "r") as state:
     #longtitude[0], latitude[1], population[2], democrat share[3], republican share[4]
     list_of_blocks = []
     highest_pop = 0
+    total_pop = 0
     for block in state:
         block = block.split(",")
         list_of_blocks.append(block)
         highest_pop = int(block[2]) if highest_pop < int(block[2]) else highest_pop
+        total_pop += block[2] #adds the block's population to the total
     print("The highest population is: " + highest_pop)
+
+    #figure out the ideal population share per district (totalPop / number of districts)
+    popPerDistrict = total_pop / districts
+    #Use this for determining if a district has too much/little population compared to the others.
+    #Ideally, each district should be within +/- 5% of the popPerDistrict
