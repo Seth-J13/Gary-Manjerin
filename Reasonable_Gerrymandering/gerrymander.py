@@ -52,6 +52,7 @@ def find_lowest(high_pops):
             min = tuple(pop)
     return min, list(high_pops).index(min)
 ###################################################################################################
+
 #Start of program, get the files and ask which files to use
 result_files = GetFiles()
 num = 0
@@ -69,6 +70,8 @@ with open(result_files[choice], "r") as state:
     # the formatting of each block VVV
     # id[0], longtitude[1], latitude[2], population[3], democrat share[4], republican share[5]
     list_of_blocks = []
+    sorted_by_lat = []
+    sorted_by_lon = []
     highest_pops = []
     # Separates the blocks and their values into a 2D array(list) and finds number of democrat districts of higest district populations
     for block in state:
@@ -85,14 +88,21 @@ with open(result_files[choice], "r") as state:
 
         # finding the higest N populations
         list_of_blocks.append([id, lon, lat, population, rep_share, dem_share])
+        sorted_by_lat.append(tuple([id, lat]))
+        sorted_by_lon.append(tuple([id, lon]))
         if len(highest_pops) < democrats:
             highest_pops.append(tuple([id, population]))
         else:
             lowest, index = find_lowest(highest_pops)
             if(population > lowest[1]):
                 highest_pops[index] = tuple([id, population])
-    # Using the highest populations we begin to seed the districts onto the map
-    
+    # print(sorted_by_lat)
+    sorted_by_lat.sort(key=lambda block: block[1])
+    sorted_by_lon.sort(key=lambda block: block[1])
+    state.close()
+
+# Using the highest populations we begin to seed the districts onto the map
+
                 
 
 
