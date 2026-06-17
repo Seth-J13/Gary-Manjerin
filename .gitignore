@@ -1,2 +1,5 @@
-Data_Collection_and_Formatting/shapefiles.csv
+Data_Collection_and_Formatting/testing
+Data_Collection_and_Formatting/training
+Predictive_Model/prediction
 .vscode/*
+shapefiles.csv
