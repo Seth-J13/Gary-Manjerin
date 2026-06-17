@@ -129,15 +129,15 @@ def Format_File():
 
     print("Finished!")
     # Create training/testing directories if they don't already exist
-    if not os.path.exists(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/../training"):
-        os.mkdir(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/../training")
-    if not os.path.exists(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/../testing"):
-        os.mkdir(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/../testing")
+    if not os.path.exists(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training"):
+        os.mkdir(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training")
+    if not os.path.exists(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/testing"):
+        os.mkdir(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/testing")
 
     print("Writing training file...")
 
     # file to training csv
-    with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/../training/" + selected_path[selected_path.rfind("/") + 1:-4] + "_train" + ".csv", 'w') as file:
+    with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training/" + selected_path[selected_path.rfind("/") + 1:-4] + "_train" + ".csv", 'w') as file:
         # file.write(" ID, Longitude, Latitude, Population, Total Votes, Republican Vote Share, Democratic Vote Share\n")
 
         # Totals used to calculate grand total
@@ -218,8 +218,8 @@ def Format_File():
 
     print("Writing test file...")
     # file to testing csv
-    with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/../testing/" + selected_path[selected_path.rfind("/") + 1:-4] + "_test" + ".csv", 'w') as file:
-        with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/../training/" + selected_path[selected_path.rfind("/") + 1:-4] + "_train" + ".csv", 'r') as  trainer:
+    with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/testing/" + selected_path[selected_path.rfind("/") + 1:-4] + "_test" + ".csv", 'w') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)).replace("\\", "/") + "/training/" + selected_path[selected_path.rfind("/") + 1:-4] + "_train" + ".csv", 'r') as  trainer:
             for _line in trainer:
                 __line = _line.strip().split(",")
                 #longitude , latitude , population, total votes

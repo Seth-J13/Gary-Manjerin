@@ -15,11 +15,11 @@ def findFiles():
 
     # If the previous folder exists on the computer already, add the training and testing folders
     if(osPath.exists(working_dir)):
-        training_path = working_dir + "/training"
+        training_path = working_dir + "/Data_Collection_and_Formatting/training"
     else:
         print("No training path exists")
     if(osPath.exists(working_dir)):
-        testing_path = working_dir + "/testing"
+        testing_path = working_dir + "/Data_Collection_and_Formatting/testing"
     else:
         print("No testing path exists")
     return training_path, testing_path
@@ -183,7 +183,7 @@ def Predict():
         path.mkdir(str(path.cwd()) + "\\prediction")
 
     # opening or creating a results.csv
-    predict_path = (str(path.cwd()) + "\\prediction\\" + str(selected_training_path).removeprefix(str(path.cwd()) + "\\training\\").removesuffix("train.csv") + "prediction_results.csv").replace("\\", "/")
+    predict_path = (str(path.cwd()) + "\\Predictive_Model\\prediction\\" + str(selected_training_path).removeprefix(str(path.cwd()) + "\\Data_Collection_and_Formatting\\training\\").removesuffix("train.csv") + "results.csv").replace("\\", "/")
     with open(predict_path, "+w") as result:
         for line in result_list:
             result.write(line)

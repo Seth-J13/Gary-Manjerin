@@ -11,20 +11,20 @@ def main():
     while step_flag != -1:
         # Beginning 
         if step_flag == 0:
-            step_flag = int(input("Please input an integer representing which step of the prediction process you would like to undergo?\n1: Format more data\n2: Re-train model and predict more data\n3: Redistrict with the same predicted data\n(1, 2, or 3) (-1 to quit) "))
+            step_flag = int(input("Please input an integer representing which step of the prediction process you would like to undergo?\n1: Format *.shp file data\n2: Train model and predict data\n3: Redistrict with predicted data\n(1, 2, or 3) (-1 to quit) "))
             # previous_step_flag = 0
 
         elif step_flag == 1:
             Format_File()
 
-            while step_flag not in {0, 2}:
+            while step_flag not in {-1, 0, 2}:
                 step_flag = int(input("\n\nWhat would you like to do?\n1: Format more data\n2: Continue to AI model training and prediction\n(1 or 2) (-1 to quit) "))
             # previous_step_flag = 1
 
         elif step_flag == 2:
             render_path = Predict() # Predict returns the file path to the prediction needed to render the prediction
 
-            while step_flag not in {0, 1, 3}:
+            while step_flag not in {-1, 0, 1, 3}:
                 step_flag = int(input("\n\nWhat would you like to do?\n1: Format more data\n2: Repeat training and prediction\n3: Redistrict with newly-predicted data\n(0, 1, or 3) (-1 to quit) "))
             # previous_step_flag = 2
         
@@ -36,7 +36,7 @@ def main():
                 print("There's nothing to render yet!")
                 step_flag = 2
 
-            while step_flag not in {0, 1, 2}:
+            while step_flag not in {-1, 0, 1, 2}:
                 step_flag = int(input("\n\nWhat would you like to do?\n1: Format more data\n2: Re-train model and predict more data\n3: Redistrict with the same predicted data\n(0, 1, or 2) (-1 to quit) "))
             # previous_step_flag = 3
             
