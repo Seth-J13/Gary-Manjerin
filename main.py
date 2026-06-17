@@ -6,7 +6,7 @@ from Predictive_Model.predict import Predict
 def main():
     step_flag = 0
     previous_step_flag = -1
-    render_path = ""
+    prediction_file_path = ""
 
     while step_flag != -1:
         # Beginning 
@@ -29,11 +29,12 @@ def main():
             # previous_step_flag = 2
         
         elif step_flag == 3:
-            # if previous_step_flag != 1:
-            #     Render(render_path)
-            # else:
-            #     print("There's nothing to render yet!")
-            #     step_flag = 2
+            if previous_step_flag != 1:
+                # [Function Here](prediction_file_path)
+                _ = None # filler line to make the interpreter shut up
+            else:
+                print("There's nothing to render yet!")
+                step_flag = 2
 
             while step_flag not in {0, 1, 2}:
                 step_flag = int(input("\n\nWhat would you like to do?\n1: Format more data\n2: Re-train model and predict more data\n3: Redistrict with the same predicted data\n(0, 1, or 2) (-1 to quit) "))
