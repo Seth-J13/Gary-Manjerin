@@ -14,6 +14,11 @@ def GetFiles():
     else:
         return print("No prediction path exists")
 ###################################################################################################
+######
+#   Get Districts functon
+#   no parameters
+#   Prompts the user for how many districts they want. It forces them in the loop until they input an actual number.
+######
 def GetDistricts():
     #keeps the user in the loop until they successfully submit a valid input
     while True: 
@@ -32,6 +37,12 @@ def GetDistricts():
         except ValueError:
             print("Bro, the prompt clearly said to give a NUMBER!")
 ###################################################################################################
+######
+#   Get Party Districts functon
+#   no parameters
+#   Prompts the user for how many democrat dominated districts they want. It forces them in the loop until they input an actual number.
+#   Republican districts = total Districts - Democrat Districts
+######
 def GetPartyDistricts(districts):
     #keeps the user in the loop until they successfully submit a valid input
     while True:
