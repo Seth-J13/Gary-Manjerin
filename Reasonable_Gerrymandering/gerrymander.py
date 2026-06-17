@@ -16,6 +16,7 @@ def GetFiles():
         return print("No prediction path exists")
 ###################################################################################################
 def GetDistricts():
+    #keeps the user in the loop until they successfully submit a valid input
     while True: 
         #Ethan: I can't believe I have to do a try/catch because some idiot is going to -->
         #-->input a non-number just to ragebait me
@@ -33,8 +34,10 @@ def GetDistricts():
             print("Bro, the prompt clearly said to give a NUMBER!")
 ###################################################################################################
 def GetPartyDistricts(districts):
+    #keeps the user in the loop until they successfully submit a valid input
     while True:
         try: 
+            #since we are using a total - number of democrats, we don't need a democrat and republican input
             numDems = int(input("How many of those disctricts do you want to be Democrat?: "))
             if(districts - numDems <= 0):
                 print("Too many democrat districts")
@@ -59,10 +62,10 @@ def Index(id):
         if id == block[0]:
             return block
 ###################################################################################################
-
 #Start of program, get the files and ask which files to use
 result_files = GetFiles()
 num = 0
+#prints out the list of files.
 for x in result_files:
     print(str(num) + ": " + str(x)[-35:])
     num += 1
@@ -78,7 +81,7 @@ with open(result_files[choice], "r") as state:
     # id[0], longtitude[1], latitude[2], population[3], democrat share[4], republican share[5]
     list_of_blocks = []
     highest_pops = []
-    # Separates the blocks and their values into a 2D array(list) and finds number of democrat districts of higest district populations
+    total_pop = 0
     for block in state:
         # getting data into a usable array
         block = block.split(",")
@@ -93,6 +96,7 @@ with open(result_files[choice], "r") as state:
 
         # finding the higest N populations
         list_of_blocks.append(tuple([id, lon, lat, population, rep_share, dem_share]))
+        total_pop += block[3] #adds the block's population to the total
 
         if len(highest_pops) < democrats:
             highest_pops.append(tuple([id, population]))
@@ -100,10 +104,13 @@ with open(result_files[choice], "r") as state:
             lowest, index = find_lowest(highest_pops)
             if(population > lowest[1]):
                 highest_pops[index] = tuple([id, population])
-    # print(sorted_by_lat)
+    #figure out the ideal population share per district (totalPop / number of districts)
+    popPerDistrict = total_pop / districts
     list_of_blocks.sort(key=lambda block: block[2])
     highest_pops.sort()
     state.close()
+    #Use this for determining if a district has too much/little population compared to the others.
+    #Ideally, each district should be within +/- 5% of the popPerDistrict
 
 # Using the highest populations we begin to seed the districts onto the map
 neighbors = {}
@@ -122,10 +129,4 @@ for block in list_of_blocks:
     neighbors.update({block[0] : nearestNeighbors})
     num += 0
     print(neighbors)
-    # minDist = math.sqrt(math.square())
-
-
-
-
-
 
