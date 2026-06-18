@@ -179,7 +179,7 @@ def Predict():
         print(f"Final Accuracy: {(1-total_deviation*2)*100:.2f}%")
 
     # find or create a place to store results
-    CONST_PATH = "\\Predictive_Model\\prediction"
+    CONST_PATH = "\\Predictive_Model\\prediction\\"
     if not osPath.exists(str(path.cwd()) + CONST_PATH):
         path.mkdir(str(path.cwd()) + CONST_PATH)
 
