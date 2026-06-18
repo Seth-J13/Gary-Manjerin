@@ -15,6 +15,11 @@ def GetFiles():
     else:
         return print("No prediction path exists")
 ###################################################################################################
+######
+#   Get Districts functon
+#   no parameters
+#   Prompts the user for how many districts they want. It forces them in the loop until they input an actual number.
+######
 def GetDistricts():
     #keeps the user in the loop until they successfully submit a valid input
     while True: 
@@ -33,6 +38,12 @@ def GetDistricts():
         except ValueError:
             print("Bro, the prompt clearly said to give a NUMBER!")
 ###################################################################################################
+######
+#   Get Party Districts functon
+#   no parameters
+#   Prompts the user for how many democrat dominated districts they want. It forces them in the loop until they input an actual number.
+#   Republican districts = total Districts - Democrat Districts
+######
 def GetPartyDistricts(districts):
     #keeps the user in the loop until they successfully submit a valid input
     while True:
@@ -96,7 +107,7 @@ with open(result_files[choice], "r") as state:
 
         # finding the higest N populations
         list_of_blocks.append(tuple([id, lon, lat, population, rep_share, dem_share]))
-        total_pop += block[3] #adds the block's population to the total
+        total_pop += int(block[3]) #adds the block's population to the total. Cast to integer to avoid errors
 
         if len(highest_pops) < democrats:
             highest_pops.append(tuple([id, population]))
@@ -112,11 +123,16 @@ with open(result_files[choice], "r") as state:
     #Use this for determining if a district has too much/little population compared to the others.
     #Ideally, each district should be within +/- 5% of the popPerDistrict
 
+#This is to make the index search happen only once instead of us needing to search every time we need id. 
+# through list_of_blocks every time it's called.
+id_to_index = {block[0]: i for i, block in enumerate(list_of_blocks)}
+
 # Using the highest populations we begin to seed the districts onto the map
 neighbors = {}
-minDist = 0.001
+#minDist = 0.001
+minDist = 0.05 
 lat_values = [block[2] for block in list_of_blocks]
-num = 0
+num = 0 #This is for setting a block id (according to Seth)
 for block in list_of_blocks:
     left_idx = split.bisect_left(lat_values, block[2] - minDist)
     right_idx = split.bisect_right(lat_values, block[2] + minDist)
@@ -124,9 +140,35 @@ for block in list_of_blocks:
     nearestNeighbors = {}
     distRange = right_idx - left_idx
     for x in range(distRange):
-        if(x + left_idx != Index(block[0])[0]):
-            nearestNeighbors.update({str(x) : str(list_of_blocks[left_idx + x][0])})
-    neighbors.update({block[0] : nearestNeighbors})
-    num += 0
+        candidate = list_of_blocks[left_idx + x]
+        if candidate[0] == block[0]:
+            continue  # skip the rest of the code
+        #check both the above and below neighbors along with left and right neighbors.
+        lon_dist = abs(candidate[1] - block[1])
+        lat_dist = abs(candidate[2] - block[2])
+        if lon_dist <= minDist and lat_dist <= minDist:
+            nearestNeighbors.update({candidate[0]: candidate[0]})
+ 
+    neighbors.update({block[0]: nearestNeighbors})
     print(neighbors)
 
+        #if(x + left_idx != Index(block[0])[0]):
+        #compare the ids on both sides
+        #if list_of_blocks[left_idx + x][0] != block[0]:
+        #    nearestNeighbors.update({str(x) : str(list_of_blocks[left_idx + x][0])})
+    #neighbors.update({block[0] : nearestNeighbors})
+    #num += 1 #Changed 0 to 1 because you were adding nothing
+    #print(neighbors)
+
+    #I want your seed (threat) Democrats
+    dem_Seed = [id[0] for id in highest_pops]
+
+    #Time for the Republican seeds. Takes the lowest population blocks
+    pop_Reverse_order = sorted(list_of_blocks, key=lambda b: b[3], reverse=True)
+
+    rep_Seed = []
+    for block in pop_Reverse_order:
+        if block[0] not in dem_Seed:        # if the block isn't among the highest populations
+            rep_Seed.append(block[0])
+        if len(rep_Seed) == republicans:     # stop once we have enough Republican districts
+            break
