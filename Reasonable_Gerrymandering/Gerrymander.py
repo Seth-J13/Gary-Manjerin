@@ -107,7 +107,7 @@ with open(result_files[choice], "r") as state:
 
         # finding the higest N populations
         list_of_blocks.append(tuple([id, lon, lat, population, rep_share, dem_share]))
-        total_pop += block[3] #adds the block's population to the total
+        total_pop += int(block[3]) #adds the block's population to the total. Cast to integer to avoid errors
 
         if len(highest_pops) < democrats:
             highest_pops.append(tuple([id, population]))
@@ -135,9 +135,11 @@ for block in list_of_blocks:
     nearestNeighbors = {}
     distRange = right_idx - left_idx
     for x in range(distRange):
-        if(x + left_idx != Index(block[0])[0]):
+        #if(x + left_idx != Index(block[0])[0]):
+        #compare the ids on both sides
+        if list_of_blocks[left_idx + x][0] != block[0]:
             nearestNeighbors.update({str(x) : str(list_of_blocks[left_idx + x][0])})
     neighbors.update({block[0] : nearestNeighbors})
-    num += 0
+    num += 1 #Changed 0 to 1 because you were adding nothing
     print(neighbors)
 
