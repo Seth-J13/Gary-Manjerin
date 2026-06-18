@@ -179,11 +179,12 @@ def Predict():
         print(f"Final Accuracy: {(1-total_deviation*2)*100:.2f}%")
 
     # find or create a place to store results
-    if not osPath.exists(str(path.cwd()) + "\\prediction"):
-        path.mkdir(str(path.cwd()) + "\\prediction")
+    CONST_PATH = "\\Predictive_Model\\prediction"
+    if not osPath.exists(str(path.cwd()) + CONST_PATH):
+        path.mkdir(str(path.cwd()) + CONST_PATH)
 
     # opening or creating a results.csv
-    predict_path = (str(path.cwd()) + "\\Predictive_Model\\prediction\\" + str(selected_training_path).removeprefix(str(path.cwd()) + "\\Data_Collection_and_Formatting\\training\\").removesuffix("train.csv") + "results.csv").replace("\\", "/")
+    predict_path = (str(path.cwd()) + CONST_PATH + str(selected_training_path).removeprefix(str(path.cwd()) + "\\Data_Collection_and_Formatting\\training\\").removesuffix("train.csv") + "results.csv").replace("\\", "/")
     with open(predict_path, "+w") as result:
         for line in result_list:
             result.write(line)
