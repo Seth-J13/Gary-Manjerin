@@ -203,7 +203,7 @@ def Format_File():
             latitude = (ymin + ymax) / 2
 
             #putting file line data together and writing it
-            file.write(str(longitude) + "," + str(latitude) + "," + str(population) + "," + str(total_votes) + "," + str(rep_share) + "," + str(dem_share) + "\n")
+            file.write(str(i) + "," + str(longitude) + "," + str(latitude) + "," + str(population) + "," + str(total_votes) + "," + str(rep_share) + "," + str(dem_share) + "\n")
 
             # Reset totals to begin a new line
             global_president_votes = 0

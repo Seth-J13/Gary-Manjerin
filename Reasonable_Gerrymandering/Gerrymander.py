@@ -2,6 +2,7 @@ import os.path as osPath
 from pathlib import Path as path
 import bisect as split
 import numpy as math
+from enum import Enum 
 ###################################################################################################
 # Get Files is the starting function that retrieves the csv result files from the previous part
 # It returns a iterable tuple for the program to use
@@ -73,6 +74,14 @@ def Index(id):
         if id == block[0]:
             return block
 ###################################################################################################
+def print_dict(districts):
+    for district, blocks in dict(districts).items():
+        print(str(district))
+        for id, neighbors in dict(blocks).items():
+            print("\t" + str(id))
+            # for neighbor in list(neighbors):
+            print("\t\t" + str(neighbors))
+###################################################################################################
 #Start of program, get the files and ask which files to use
 result_files = GetFiles()
 num = 0
@@ -86,6 +95,15 @@ choice = int(input("\nWhich state would you like to gerrymander?\n"))
 districts = GetDistricts()
 democrats, republicans = GetPartyDistricts(districts)
 
+# This is to save us the confusion of arbitrary array/list indexing. 
+# Use this when accessing any part of a block's data 
+class Data(Enum):
+    ID = 0
+    LON = 1
+    LAT = 2
+    POP = 3
+    DEM = 4
+    REP = 5
 # Iterating through the state file and beginning to gerrymander
 with open(result_files[choice], "r") as state:
     # the formatting of each block VVV
@@ -106,8 +124,8 @@ with open(result_files[choice], "r") as state:
         dem_share = float(block[5])
 
         # finding the higest N populations
-        list_of_blocks.append(tuple([id, lon, lat, population, rep_share, dem_share]))
-        total_pop += int(block[3]) #adds the block's population to the total. Cast to integer to avoid errors
+        list_of_blocks.append(tuple([id, lon, lat, population, dem_share, rep_share]))
+        total_pop += population #adds the block's population to the total. Cast to integer to avoid errors
 
         if len(highest_pops) < democrats:
             highest_pops.append(tuple([id, population]))
@@ -125,50 +143,78 @@ with open(result_files[choice], "r") as state:
 
 #This is to make the index search happen only once instead of us needing to search every time we need id. 
 # through list_of_blocks every time it's called.
-id_to_index = {block[0]: i for i, block in enumerate(list_of_blocks)}
+id_to_index = {block[Data.ID.value]: i for i, block in enumerate(list_of_blocks)}
 
 # Using the highest populations we begin to seed the districts onto the map
-neighbors = {}
 #minDist = 0.001
 minDist = 0.05 
-lat_values = [block[2] for block in list_of_blocks]
-num = 0 #This is for setting a block id (according to Seth)
+lat_values = [block[Data.LAT.value] for block in list_of_blocks]
+block_neighbors = {}
+# This loop intializes a dictionary with every single block having a list of its neighbors
 for block in list_of_blocks:
     left_idx = split.bisect_left(lat_values, block[2] - minDist)
     right_idx = split.bisect_right(lat_values, block[2] + minDist)
-    print("lat: " + str(block[2]) + "| L: " + str(left_idx) + " | R: " + str(right_idx))
-    nearestNeighbors = {}
+    # print("lat: " + str(block[2]) + "| L: " + str(left_idx) + " | R: " + str(right_idx))
     distRange = right_idx - left_idx
     for x in range(distRange):
         candidate = list_of_blocks[left_idx + x]
-        if candidate[0] == block[0]:
+        neighbors = [] if block_neighbors.get(block[Data.ID.value]) == None else block_neighbors.get(block[Data.ID.value])
+        if candidate[Data.ID.value] == block[Data.ID.value]:
             continue  # skip the rest of the code
         #check both the above and below neighbors along with left and right neighbors.
-        lon_dist = abs(candidate[1] - block[1])
-        lat_dist = abs(candidate[2] - block[2])
+        lon_dist = abs(candidate[Data.LON.value] - block[Data.LON.value])
+        lat_dist = abs(candidate[Data.LAT.value] - block[Data.LAT.value])
         if lon_dist <= minDist and lat_dist <= minDist:
-            nearestNeighbors.update({candidate[0]: candidate[0]})
- 
-    neighbors.update({block[0]: nearestNeighbors})
-    print(neighbors)
+            neighbors.append(candidate[Data.ID.value])
+            block_neighbors.update({block[Data.ID.value]: neighbors})
 
-        #if(x + left_idx != Index(block[0])[0]):
-        #compare the ids on both sides
-        #if list_of_blocks[left_idx + x][0] != block[0]:
-        #    nearestNeighbors.update({str(x) : str(list_of_blocks[left_idx + x][0])})
-    #neighbors.update({block[0] : nearestNeighbors})
-    #num += 1 #Changed 0 to 1 because you were adding nothing
-    #print(neighbors)
+#Goals:
+# Calculate ideal population add it to the district dict
+# We need a loop to start adding blocks to districts
+# Visual of hierarchy 
+# districts =
+#   {
+#       (district num/name) : { (priority of district) : (priority value), (block id) : (list of block neighbors) }
+#       0 : { priority : X, block1 : [neighbors], block2 : [neighbors], ...}
+#       1 : { priority : X, block1 : [neighbors], block2 : [neighbors], ...}
+#       2 : { priority : X, block1 : [neighbors], block2 : [neighbors], ...}
+#       ...
+#   }
+"""
+So far we have block_neighbors which is a dictionary of block ids with their corresponding neighbors
+    {(single id) : (list of ids)
+        block1 : [neighbor ids]
+        block2 : [neighbor ids]
+        block3 : [neighbor ids]
+    }
 
+    
+    TO ETHAN:
+        If you want to, 
+            1. You can start calculating the ideal population for a district.
+            2. Create the districts and start working on a loop that iterates through the block_neighbors and adds to a district
+                I imagine that it would need to be a while loop because it would have to loop over block_neighbors over and over till
+                it is empty. Furthermore, you may need to have the seeds figured out so if you can't get this to work without the seeds
+                then work on that first. I'll pick up where you leave off tomorrow if I can.
+        
+"""
+
+
+
+
+
+#VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+# I commented out this because I was focusing on the dict inits, you can continue if you like
+#VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
     #I want your seed (threat) Democrats
-    dem_Seed = [id[0] for id in highest_pops]
+    # dem_Seed = [id[0] for id in highest_pops]
 
-    #Time for the Republican seeds. Takes the lowest population blocks
-    pop_Reverse_order = sorted(list_of_blocks, key=lambda b: b[3], reverse=True)
+    # #Time for the Republican seeds. Takes the lowest population blocks
+    # pop_Reverse_order = sorted(list_of_blocks, key=lambda b: b[3], reverse=True)
 
-    rep_Seed = []
-    for block in pop_Reverse_order:
-        if block[0] not in dem_Seed:        # if the block isn't among the highest populations
-            rep_Seed.append(block[0])
-        if len(rep_Seed) == republicans:     # stop once we have enough Republican districts
-            break
+    # rep_Seed = []
+    # for block in pop_Reverse_order:
+    #     if block[0] not in dem_Seed:        # if the block isn't among the highest populations
+    #         rep_Seed.append(block[0])
+    #     if len(rep_Seed) == republicans:     # stop once we have enough Republican districts
+    #         break

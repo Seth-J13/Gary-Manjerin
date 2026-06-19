@@ -63,36 +63,45 @@ def Predict():
         
         # Collect all the proper vote shares already existing in the data (includes zero'd entries)
         for row in filereader:
-            total_share = float(row[4]) + float(row[5]) # Total up vote share
+            rep_share = row[5]
+            dem_share = row[6]
+            total_share = float(rep_share) + float(dem_share) # Total up vote share
             
             # Normalize the vote shares if the sum of them is over 100%, otherwise add them raw
             if total_share >= 1:
-                r_percent = float(row[4]) / float(total_share) # Normalize republican share
-                d_percent = float(row[5]) / float(total_share) # Normalize democrat share
+                r_percent = float(rep_share) / float(total_share) # Normalize republican share
+                d_percent = float(dem_share) / float(total_share) # Normalize democrat share
                 correct_answers.append([r_percent, d_percent])
             else:
-                correct_answers.append([float(row[4]), float(row[5])])
+                correct_answers.append([float(rep_share), float(dem_share)])
 
         # Restart the file reader so we can do the actual training
         train.seek(0)
         filereader = csv.reader(train)
         for row in filereader:
+            id = row[0]
+            lon = row[1]
+            lat = row[2]
+            pop = row[3]
+            total_votes = row[4]
+            rep_share = row[5]
+            dem_share = row[6]
             # Calculate normalized percentage of republican and democrat votes returned
-            if float(row[3]) != 0.0 and int(row[2]) != 0: # Skip and auto-set to 0 if there is no population in this block
-                X.append([float(row[0]), float(row[1]), float(row[2]), float(row[3])]) # Given the first 3 columns
+            if float(total_votes) != 0.0 and int(pop) != 0: # Skip and auto-set to 0 if there is no population in this block
+                X.append([float(lon), float(lat), float(pop), float(total_votes)]) # Given the first 3 columns
                 y.append(correct_answers[filereader.line_num-1][1]) # Predict the normalized 6th column (normalized 5th column is just [1.0 - 4th_column])
 
             # Storing min and max X and Y values this way greatly increases performance rather
             # than using built in functions to find the min and max of the whole array after it's built
-            if float(row[5]) > max_y:
-                max_y = float(row[5])
-            if float(row[5]) < min_y:
-                min_y = float(row[5]) if float(row[5]) != 0 else min_y
+            if float(dem_share) > max_y:
+                max_y = float(dem_share)
+            if float(dem_share) < min_y:
+                min_y = float(dem_share) if float(dem_share) != 0 else min_y
 
-            if float(row[2]) > max_x:
-                max_x = float(row[2])
-            if float(row[2]) < min_x:
-                min_x = float(row[2]) if float(row[2]) != 0 else min_x
+            if float(pop) > max_x:
+                max_x = float(pop)
+            if float(pop) < min_x:
+                min_x = float(pop) if float(pop) != 0 else min_x
 
             # This skips lines randomly (but never 5 times in a row)
             jumper = np.random.randint(0,4)
@@ -150,19 +159,25 @@ def Predict():
         result_list = []
         # Test through every line in the CSV
         for row in filereader:
-            if float(row[2]) == 0.0: # This is used to breeze past areas with 0 population
+            # lon[0], lat[1], pop[2], tot[3], rep[4], dem[5]
+            id = row[0]
+            lon = row[1]
+            lat = row[2]
+            pop = row[3]
+            
+            if float(pop) == 0.0: # This is used to breeze past areas with 0 population
                 republicans = 0.0
                 democrats = 0.0
-                result_list.append(str(row[0]) + "," + str(row[1]) + "," + str(row[2]) + "," + str(democrats) + "," + str(republicans) + "\n")
+                result_list.append(str(id) + "," + str(lon) + "," + str(lat) + "," + str(pop) + "," + str(democrats) + "," + str(republicans) + "\n")
             else:
-                democrats = prediction_model.predict([[float(row[0]), float(row[1]), float(row[2]), float(row[3])]])[0] # Predict vote share
+                democrats = prediction_model.predict([[float(lon), float(lat), float(pop), float(total_votes)]])[0] # Predict vote share
                 # Clamp democrat results to between 0.01% and 99.99%
                 democrats = 0.9999 if democrats > 0.9999 else democrats
                 democrats = 0.0001 if democrats < 0.0001 else democrats
 
                 # Calculate republican votes based on democrats (ignore other parties since that would require four separate Support-Vector-Regressors)
                 republicans = 1.0 - democrats
-                result_list.append(str(row[0]) + "," + str(row[1]) + "," + str(row[2]) + "," + str(democrats) + "," + str(republicans) + "\n")
+                result_list.append(str(id) + "," + str(lon) + "," + str(lat) + "," + str(pop) + "," + str(democrats) + "," + str(republicans) + "\n")
 
                 # Calculate deviation from correct scores by updating current deviation with the average between the current and previous deviation
                 deviations.append(abs(correct_answers[correct_index][1] - democrats)/2)
