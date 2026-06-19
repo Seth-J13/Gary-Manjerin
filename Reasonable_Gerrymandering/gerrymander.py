@@ -134,7 +134,7 @@ with open(result_files[choice], "r") as state:
             if(population > lowest[1]):
                 highest_pops[index] = tuple([id, population])
     #figure out the ideal population share per district (totalPop / number of districts)
-    popPerDistrict = total_pop / districts
+    idealPop = total_pop / districts
     list_of_blocks.sort(key=lambda block: block[2])
     highest_pops.sort()
     state.close()
@@ -169,7 +169,7 @@ for block in list_of_blocks:
             block_neighbors.update({block[Data.ID.value]: neighbors})
 
 #Goals:
-# Calculate ideal population add it to the district dict
+# Calculate ideal population add it to the district dict (done idealPop line 137)
 # We need a loop to start adding blocks to districts
 # Visual of hierarchy 
 # districts =
@@ -198,23 +198,82 @@ So far we have block_neighbors which is a dictionary of block ids with their cor
                 then work on that first. I'll pick up where you leave off tomorrow if I can.
         
 """
+###########################
+#Districting block
+#Time for some seeds
+###########################
+#I want your seed (threat) Democrats
+dem_Seeds = [id[0] for id in highest_pops]
 
+ #Time for the Republican seeds. Takes the lowest population blocks
+pop_Reverse_order = sorted(list_of_blocks, key=lambda b: b[3], reverse=True)
 
+rep_Seeds = []
+for block in pop_Reverse_order:
+    if block[0] not in dem_Seeds:        # if the block isn't among the highest populations
+        rep_Seeds.append(block[0])
+    if len(rep_Seeds) == republicans:     # stop once we have enough Republican districts
+        break
 
+#compile the list of all the seeds
+all_seeds = list(highest_pops) + rep_Seeds
 
+###########################
+#Districting block 2
+# Create the starting districts
+###########################
+districts = {}
+assigned = {}     # block_id -> district number, so no block ever gets claimed twice
+frontiers = {}    # district number -> list of block ids on the growing edge
+ 
+ #labels each district as either Democrat or Republican
+for district_num, (seed_id, seed_pop) in enumerate(all_seeds):
+    party = "D" if district_num < democrats else "R"
+    districts[district_num] = {
+        "priority": idealPop - seed_pop,
+        "party": party,
+        "population": seed_pop,
+        seed_id: block_neighbors.get(seed_id, [])
+    }
+    assigned[seed_id] = district_num
+    frontiers[district_num] = [seed_id]
 
-#VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-# I commented out this because I was focusing on the dict inits, you can continue if you like
-#VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-    #I want your seed (threat) Democrats
-    # dem_Seed = [id[0] for id in highest_pops]
-
-    # #Time for the Republican seeds. Takes the lowest population blocks
-    # pop_Reverse_order = sorted(list_of_blocks, key=lambda b: b[3], reverse=True)
-
-    # rep_Seed = []
-    # for block in pop_Reverse_order:
-    #     if block[0] not in dem_Seed:        # if the block isn't among the highest populations
-    #         rep_Seed.append(block[0])
-    #     if len(rep_Seed) == republicans:     # stop once we have enough Republican districts
-    #         break
+###########################
+# Spread the districts until all blocks are claimed
+###########################
+# made by AI VVVVVVVV
+total_blocks = len(list_of_blocks)
+ 
+while len(assigned) < total_blocks:
+    district_num = max(districts.keys(), key=lambda d: districts[d]["priority"])
+    frontier = frontiers[district_num]
+ 
+    claimed = False
+    while frontier and not claimed:
+        current_id = frontier.pop(0)
+        for neighbor_id in block_neighbors.get(current_id, []):
+            if neighbor_id in assigned:
+                continue
+            neighbor_block = Index(neighbor_id)
+            districts[district_num][neighbor_id] = block_neighbors.get(neighbor_id, [])
+            districts[district_num]["population"] += neighbor_block[Data.POP.value]
+            districts[district_num]["priority"] = idealPop - districts[district_num]["population"]
+            assigned[neighbor_id] = district_num
+            frontier.append(neighbor_id)
+            claimed = True
+            break  # one block per turn, then re-check which district needs it most
+ 
+    if not claimed:
+        districts[district_num]["priority"] = float("-inf")
+ 
+    if len(assigned) < total_blocks and all(d["priority"] == float("-inf") for d in districts.values()):
+        leftover_ids = [b[Data.ID.value] for b in list_of_blocks if b[Data.ID.value] not in assigned]
+        smallest_district = min(districts.keys(), key=lambda d: districts[d]["population"])
+        for leftover_id in leftover_ids:
+            block = Index(leftover_id)
+            districts[smallest_district][leftover_id] = block_neighbors.get(leftover_id, [])
+            districts[smallest_district]["population"] += block[Data.POP.value]
+            assigned[leftover_id] = smallest_district
+        break
+ 
+print_dict(districts)
