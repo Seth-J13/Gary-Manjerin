@@ -76,13 +76,26 @@ def Index(id):
 ###################################################################################################
 def print_dict(districts):
     for district, blocks in dict(districts).items():
-        print(str(district))
+        print("This is a district: " +str(district))
         for id, neighbors in dict(blocks).items():
-            print("\t" + str(id))
+            print("\tThis is a block: " + str(id))
             # for neighbor in list(neighbors):
-            print("\t\t" + str(neighbors))
+            print("\t\tThis is its neighbors: " + str(neighbors))
+###################################################################################################
+def create_csv(districts):
+    mainDir = path.cwd().as_posix().removesuffix("/Reasonable_Gerrymandering").replace("\\", "/") + "/"
+    currDir = path.cwd().as_posix().replace("\\", "/") + "/"
+    if(not path.exists(path(currDir + "gerrymandered_results"))):
+        path.mkdir(path(currDir + "gerrymandered_results"))
+    result_path = currDir + "gerrymandered_results"
+    with open(result_path, "+w") as result:
+        return
+        # ~~~~~~ create a csv here ~~~~~~
+    return
 ###################################################################################################
 #Start of program, get the files and ask which files to use
+create_csv({4, 3, 4})
+input("waiting")
 result_files = GetFiles()
 num = 0
 #prints out the list of files.
@@ -147,76 +160,78 @@ id_to_index = {block[Data.ID.value]: i for i, block in enumerate(list_of_blocks)
 
 # Using the highest populations we begin to seed the districts onto the map
 #minDist = 0.001
-minDist = 0.05 
-lat_values = [block[Data.LAT.value] for block in list_of_blocks]
-block_neighbors = {}
-# This loop intializes a dictionary with every single block having a list of its neighbors
+minDist = 0.05
+
+print(f"[DEBUG] Building spatial grid for neighbor search (minDist={minDist}) "
+      f"over {len(list_of_blocks)} blocks...")
+
+# NOTE: the old bisect approach only narrowed candidates by LATITUDE, so for
+# every block it was scanning every other block in a similar latitude band
+# across the ENTIRE longitude span of the state -- that's what made this take
+# 30+ minutes. A 2D grid only ever compares a block against the handful of
+# blocks in its own cell and the 8 cells touching it.
+cell_size = minDist
+grid = {}
 for block in list_of_blocks:
-    left_idx = split.bisect_left(lat_values, block[2] - minDist)
-    right_idx = split.bisect_right(lat_values, block[2] + minDist)
-    # print("lat: " + str(block[2]) + "| L: " + str(left_idx) + " | R: " + str(right_idx))
-    distRange = right_idx - left_idx
-    for x in range(distRange):
-        candidate = list_of_blocks[left_idx + x]
-        neighbors = [] if block_neighbors.get(block[Data.ID.value]) == None else block_neighbors.get(block[Data.ID.value])
-        if candidate[Data.ID.value] == block[Data.ID.value]:
-            continue  # skip the rest of the code
-        #check both the above and below neighbors along with left and right neighbors.
-        lon_dist = abs(candidate[Data.LON.value] - block[Data.LON.value])
-        lat_dist = abs(candidate[Data.LAT.value] - block[Data.LAT.value])
-        if lon_dist <= minDist and lat_dist <= minDist:
-            neighbors.append(candidate[Data.ID.value])
-            block_neighbors.update({block[Data.ID.value]: neighbors})
+    cell = (int(block[Data.LON.value] // cell_size), int(block[Data.LAT.value] // cell_size))
+    grid.setdefault(cell, []).append(block)
 
-#Goals:
-# Calculate ideal population add it to the district dict (done idealPop line 137)
-# We need a loop to start adding blocks to districts
-# Visual of hierarchy 
-# districts =
-#   {
-#       (district num/name) : { (priority of district) : (priority value), (block id) : (list of block neighbors) }
-#       0 : { priority : X, block1 : [neighbors], block2 : [neighbors], ...}
-#       1 : { priority : X, block1 : [neighbors], block2 : [neighbors], ...}
-#       2 : { priority : X, block1 : [neighbors], block2 : [neighbors], ...}
-#       ...
-#   }
-"""
-So far we have block_neighbors which is a dictionary of block ids with their corresponding neighbors
-    {(single id) : (list of ids)
-        block1 : [neighbor ids]
-        block2 : [neighbor ids]
-        block3 : [neighbor ids]
-    }
+print(f"[DEBUG] Grid built: {len(grid)} occupied cell(s), "
+      f"avg {len(list_of_blocks) / max(len(grid), 1):.1f} block(s)/cell")
 
-    
-    TO ETHAN:
-        If you want to, 
-            1. You can start calculating the ideal population for a district.
-            2. Create the districts and start working on a loop that iterates through the block_neighbors and adds to a district
-                I imagine that it would need to be a while loop because it would have to loop over block_neighbors over and over till
-                it is empty. Furthermore, you may need to have the seeds figured out so if you can't get this to work without the seeds
-                then work on that first. I'll pick up where you leave off tomorrow if I can.
-        
-"""
+block_neighbors = {}
+processed = 0
+pairs_found = 0
+
+for block in list_of_blocks:
+    block_id = block[Data.ID.value]
+    cx = int(block[Data.LON.value] // cell_size)
+    cy = int(block[Data.LAT.value] // cell_size)
+
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            for candidate in grid.get((cx + dx, cy + dy), []):
+                candidate_id = candidate[Data.ID.value]
+                if candidate_id <= block_id:
+                    continue  # skip self, and skip pairs already handled from the other side
+                lon_dist = abs(candidate[Data.LON.value] - block[Data.LON.value])
+                lat_dist = abs(candidate[Data.LAT.value] - block[Data.LAT.value])
+                if lon_dist <= minDist and lat_dist <= minDist:
+                    block_neighbors.setdefault(block_id, []).append(candidate_id)
+                    block_neighbors.setdefault(candidate_id, []).append(block_id)
+                    pairs_found += 1
+
+    processed += 1
+    if processed % 5000 == 0:
+        print(f"[DEBUG] Neighbor search: {processed}/{len(list_of_blocks)} blocks processed, "
+              f"{pairs_found} neighbor pair(s) found so far")
+
+print(f"[DEBUG] Neighbor search complete: {pairs_found} pair(s) found, "
+      f"{len(block_neighbors)} block(s) have at least one neighbor")
+
+
 ###########################
 #Districting block
 #Time for some seeds
 ###########################
 #I want your seed (threat) Democrats
 dem_Seeds = [id[0] for id in highest_pops]
+print(f"[DEBUG] Selected {len(dem_Seeds)} Democrat seed block(s): {dem_Seeds}")
 
  #Time for the Republican seeds. Takes the lowest population blocks
 pop_Reverse_order = sorted(list_of_blocks, key=lambda b: b[3], reverse=True)
 
 rep_Seeds = []
 for block in pop_Reverse_order:
-    if block[0] not in dem_Seeds:        # if the block isn't among the highest populations
-        rep_Seeds.append(block[0])
+    if block[Data.ID.value] not in dem_Seeds:        # if the block isn't among the highest populations
+        rep_Seeds.append((block[Data.ID.value], block[Data.POP.value]))
     if len(rep_Seeds) == republicans:     # stop once we have enough Republican districts
         break
+print(f"[DEBUG] Selected {len(rep_Seeds)} Republican seed block(s): {rep_Seeds}")
 
 #compile the list of all the seeds
 all_seeds = list(highest_pops) + rep_Seeds
+print(f"[DEBUG] Total seeds compiled: {len(all_seeds)} (expected {districts})")
 
 ###########################
 #Districting block 2
@@ -237,17 +252,27 @@ for district_num, (seed_id, seed_pop) in enumerate(all_seeds):
     }
     assigned[seed_id] = district_num
     frontiers[district_num] = [seed_id]
+    print(f"[DEBUG] Created district {district_num} ({party}) seeded at block {seed_id}, "
+          f"starting population {seed_pop}")
 
 ###########################
 # Spread the districts until all blocks are claimed
 ###########################
 # made by AI VVVVVVVV
+
 total_blocks = len(list_of_blocks)
- 
+
+print(f"[DEBUG] All {len(districts)} districts seeded. Beginning spread phase "
+      f"({total_blocks} total blocks to assign)...")
+
+DEBUG_PRINT_EVERY = 100   # print a progress line every N blocks claimed (raise/lower as needed)
+loop_count = 0
+
 while len(assigned) < total_blocks:
+    loop_count += 1
     district_num = max(districts.keys(), key=lambda d: districts[d]["priority"])
     frontier = frontiers[district_num]
- 
+
     claimed = False
     while frontier and not claimed:
         current_id = frontier.pop(0)
@@ -261,19 +286,34 @@ while len(assigned) < total_blocks:
             assigned[neighbor_id] = district_num
             frontier.append(neighbor_id)
             claimed = True
+            if len(assigned) % DEBUG_PRINT_EVERY == 0 or len(assigned) == total_blocks:
+                print(f"[DEBUG] Progress: {len(assigned)}/{total_blocks} blocks assigned "
+                      f"(loop {loop_count}) | district {district_num} "
+                      f"({districts[district_num]['party']}) claimed block {neighbor_id}, "
+                      f"population now {districts[district_num]['population']:.0f} "
+                      f"(target {idealPop:.0f})")
             break  # one block per turn, then re-check which district needs it most
- 
+
     if not claimed:
         districts[district_num]["priority"] = float("-inf")
- 
+        print(f"[DEBUG] District {district_num} ({districts[district_num]['party']}) has no "
+              f"unclaimed neighbors left on its frontier; marking it inactive.")
+
     if len(assigned) < total_blocks and all(d["priority"] == float("-inf") for d in districts.values()):
         leftover_ids = [b[Data.ID.value] for b in list_of_blocks if b[Data.ID.value] not in assigned]
         smallest_district = min(districts.keys(), key=lambda d: districts[d]["population"])
+        print(f"[DEBUG] All districts stalled at {len(assigned)}/{total_blocks} blocks assigned. "
+              f"Dumping {len(leftover_ids)} leftover block(s) into district {smallest_district} "
+              f"({districts[smallest_district]['party']}, currently smallest).")
         for leftover_id in leftover_ids:
             block = Index(leftover_id)
             districts[smallest_district][leftover_id] = block_neighbors.get(leftover_id, [])
             districts[smallest_district]["population"] += block[Data.POP.value]
             assigned[leftover_id] = smallest_district
         break
- 
+
+print(f"[DEBUG] Spread phase complete after {loop_count} outer loop iteration(s). "
+      f"{len(assigned)}/{total_blocks} blocks assigned across {len(districts)} districts.")
+
+create_csv(districts)
 print_dict(districts)
