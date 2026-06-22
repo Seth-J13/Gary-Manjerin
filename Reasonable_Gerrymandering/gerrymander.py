@@ -68,11 +68,14 @@ def find_lowest(high_pops):
     return min, list(high_pops).index(min)
 ###################################################################################################
 def Index(id):
-    # print(id)
-    for block in list_of_blocks:
-        # print(block)
-        if id == block[0]:
-            return block
+    # id_to_index is built once (see below) so this is an O(1) dict lookup
+    # instead of an O(n) scan through list_of_blocks. With 500k+ blocks the
+    # old version turned every leftover-dump and every spread-claim into a
+    # linear scan, which is what was making the leftover-dump step take hours.
+    idx = id_to_index.get(id)
+    return list_of_blocks[idx] if idx is not None else None
+
+
 ###################################################################################################
 def print_dict(districts):
     for district, blocks in dict(districts).items():
@@ -82,20 +85,28 @@ def print_dict(districts):
             # for neighbor in list(neighbors):
             print("\t\tThis is its neighbors: " + str(neighbors))
 ###################################################################################################
-def create_csv(districts):
+def create_csv(districts, choice):
     mainDir = path.cwd().as_posix().removesuffix("/Reasonable_Gerrymandering").replace("\\", "/") + "/"
     currDir = path.cwd().as_posix().replace("\\", "/") + "/"
-    if(not path.exists(path(currDir + "gerrymandered_results"))):
-        path.mkdir(path(currDir + "gerrymandered_results"))
-    result_path = currDir + "gerrymandered_results"
-    with open(result_path, "+w") as result:
-        return
+    result_dir = currDir + "gerrymandered_results"
+
+    if(not path.exists(path(result_dir))):
+        path.mkdir(path(result_dir))
+    
+    choice = str(choice[-35:]).removesuffix("results.csv") + "gerrymandered.csv"
+    with open(result_dir + "/" + choice, "+w") as result:
         # ~~~~~~ create a csv here ~~~~~~
-    return
-###################################################################################################
+        # district, block, [], block, []
+        # district, block:[], block:[]
+        newRow = ""
+        for district, blocks in dict(districts).items():
+            newRow += str(district) + ", "
+            for blockId, neighbors in dict(blocks).items():
+                newRow += str(blockId) + ":" + str(neighbors) + ", "
+            result.write(newRow + "\n")
+            newRow = ""
+##################################################################################################
 #Start of program, get the files and ask which files to use
-create_csv({4, 3, 4})
-input("waiting")
 result_files = GetFiles()
 num = 0
 #prints out the list of files.
@@ -171,6 +182,11 @@ print(f"[DEBUG] Building spatial grid for neighbor search (minDist={minDist}) "
 # 30+ minutes. A 2D grid only ever compares a block against the handful of
 # blocks in its own cell and the 8 cells touching it.
 cell_size = minDist
+
+# Tuning knobs for the adaptive radius below.
+MIN_NEIGHBORS = 4        # every block should end up with at least this many neighbors
+MAX_RING_EXPANSION = 40  # safety cap so a truly empty area can't search forever
+
 grid = {}
 for block in list_of_blocks:
     cell = (int(block[Data.LON.value] // cell_size), int(block[Data.LAT.value] // cell_size))
@@ -206,21 +222,87 @@ for block in list_of_blocks:
         print(f"[DEBUG] Neighbor search: {processed}/{len(list_of_blocks)} blocks processed, "
               f"{pairs_found} neighbor pair(s) found so far")
 
+print(f"[DEBUG] Base radius pass complete: {pairs_found} pair(s) found, "
+      f"{len(block_neighbors)} block(s) have >=1 neighbor")
+
+###########################
+# Top-up pass: a fixed minDist is fine for dense urban blocks but leaves
+# sparse/rural blocks (huge in CA) with zero neighbors -- those blocks can
+# never be reached by district growth and previously got bulk-dumped into
+# one district at the end. Any block short of MIN_NEIGHBORS gets its own
+# search radius expanded outward, ring of grid cells at a time, until it
+# finds enough neighbors. Dense blocks are untouched -- only the sparse
+# minority pays the extra cost.
+###########################
+def ring_cells(cx, cy, r):
+    """All grid cells at exactly Chebyshev distance r from (cx, cy)."""
+    cells = []
+    for dx in range(-r, r + 1):
+        cells.append((cx + dx, cy - r))
+        cells.append((cx + dx, cy + r))
+    for dy in range(-r + 1, r):
+        cells.append((cx - r, cy + dy))
+        cells.append((cx + r, cy + dy))
+    return cells
+
+sparse_ids = [b[Data.ID.value] for b in list_of_blocks
+              if len(block_neighbors.get(b[Data.ID.value], [])) < MIN_NEIGHBORS]
+
+print(f"[DEBUG] {len(sparse_ids)} block(s) have fewer than {MIN_NEIGHBORS} neighbor(s) "
+      f"after the base pass; expanding their search radius individually...")
+
+topped_up = 0
+still_isolated = 0
+
+for block_id in sparse_ids:
+    block = Index(block_id)
+    cx = int(block[Data.LON.value] // cell_size)
+    cy = int(block[Data.LAT.value] // cell_size)
+    existing = set(block_neighbors.get(block_id, []))
+    needed = MIN_NEIGHBORS - len(existing)
+    found = []  # (distance, candidate_id)
+    ring = 2    # rings 0-1 (the 3x3 block) were already covered by the base pass
+    while len(found) < needed and ring <= MAX_RING_EXPANSION:
+        for (gx, gy) in ring_cells(cx, cy, ring):
+            for candidate in grid.get((gx, gy), []):
+                candidate_id = candidate[Data.ID.value]
+                if candidate_id == block_id or candidate_id in existing:
+                    continue
+                lon_dist = abs(candidate[Data.LON.value] - block[Data.LON.value])
+                lat_dist = abs(candidate[Data.LAT.value] - block[Data.LAT.value])
+                found.append((max(lon_dist, lat_dist), candidate_id))
+        ring += 1
+
+    found.sort()
+    for _, candidate_id in found[:needed]:
+        block_neighbors.setdefault(block_id, []).append(candidate_id)
+        block_neighbors.setdefault(candidate_id, []).append(block_id)
+        existing.add(candidate_id)
+        pairs_found += 1
+
+    if existing:
+        topped_up += 1
+    else:
+        still_isolated += 1  # nothing found even after MAX_RING_EXPANSION rings
+
+print(f"[DEBUG] Top-up pass complete: {topped_up} block(s) topped up, "
+      f"{still_isolated} block(s) still isolated after {MAX_RING_EXPANSION} ring(s) "
+      f"(no other block anywhere nearby -- worth a data sanity check if this is > 0)")
+
 print(f"[DEBUG] Neighbor search complete: {pairs_found} pair(s) found, "
       f"{len(block_neighbors)} block(s) have at least one neighbor")
-
 
 ###########################
 #Districting block
 #Time for some seeds
 ###########################
+
 #I want your seed (threat) Democrats
 dem_Seeds = [id[0] for id in highest_pops]
 print(f"[DEBUG] Selected {len(dem_Seeds)} Democrat seed block(s): {dem_Seeds}")
 
  #Time for the Republican seeds. Takes the lowest population blocks
 pop_Reverse_order = sorted(list_of_blocks, key=lambda b: b[3], reverse=True)
-
 rep_Seeds = []
 for block in pop_Reverse_order:
     if block[Data.ID.value] not in dem_Seeds:        # if the block isn't among the highest populations
@@ -240,7 +322,7 @@ print(f"[DEBUG] Total seeds compiled: {len(all_seeds)} (expected {districts})")
 districts = {}
 assigned = {}     # block_id -> district number, so no block ever gets claimed twice
 frontiers = {}    # district number -> list of block ids on the growing edge
- 
+
  #labels each district as either Democrat or Republican
 for district_num, (seed_id, seed_pop) in enumerate(all_seeds):
     party = "D" if district_num < democrats else "R"
@@ -256,12 +338,13 @@ for district_num, (seed_id, seed_pop) in enumerate(all_seeds):
           f"starting population {seed_pop}")
 
 ###########################
+
 # Spread the districts until all blocks are claimed
+
 ###########################
+
 # made by AI VVVVVVVV
-
 total_blocks = len(list_of_blocks)
-
 print(f"[DEBUG] All {len(districts)} districts seeded. Beginning spread phase "
       f"({total_blocks} total blocks to assign)...")
 
@@ -272,7 +355,6 @@ while len(assigned) < total_blocks:
     loop_count += 1
     district_num = max(districts.keys(), key=lambda d: districts[d]["priority"])
     frontier = frontiers[district_num]
-
     claimed = False
     while frontier and not claimed:
         current_id = frontier.pop(0)
@@ -294,10 +376,13 @@ while len(assigned) < total_blocks:
                       f"(target {idealPop:.0f})")
             break  # one block per turn, then re-check which district needs it most
 
+
+
     if not claimed:
         districts[district_num]["priority"] = float("-inf")
         print(f"[DEBUG] District {district_num} ({districts[district_num]['party']}) has no "
               f"unclaimed neighbors left on its frontier; marking it inactive.")
+
 
     if len(assigned) < total_blocks and all(d["priority"] == float("-inf") for d in districts.values()):
         leftover_ids = [b[Data.ID.value] for b in list_of_blocks if b[Data.ID.value] not in assigned]
@@ -312,8 +397,11 @@ while len(assigned) < total_blocks:
             assigned[leftover_id] = smallest_district
         break
 
+
 print(f"[DEBUG] Spread phase complete after {loop_count} outer loop iteration(s). "
+
       f"{len(assigned)}/{total_blocks} blocks assigned across {len(districts)} districts.")
 
-create_csv(districts)
-print_dict(districts)
+print("Beginning data conversion...\nThis may take up 10 minutes")
+create_csv(districts, str(result_files[choice]))
+print_dict("Finished")
