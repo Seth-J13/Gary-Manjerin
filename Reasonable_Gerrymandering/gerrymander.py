@@ -85,26 +85,41 @@ def print_dict(districts):
             # for neighbor in list(neighbors):
             print("\t\tThis is its neighbors: " + str(neighbors))
 ###################################################################################################
+#def create_csv(districts, choice):
+#    mainDir = path.cwd().as_posix().removesuffix("/Reasonable_Gerrymandering").replace("\\", "/") + "/"
+#    currDir = path.cwd().as_posix().replace("\\", "/") + "/"
+#    result_dir = currDir + "gerrymandered_results"
+#
+#    if(not path.exists(path(result_dir))):
+#        path.mkdir(path(result_dir))
+#    
+#    choice = str(choice[-35:]).removesuffix("results.csv") + "gerrymandered.csv"
+#    with open(result_dir + "/" + choice, "+w") as result:
+        # ~~~~~~ create a csv here ~~~~~~
+        # district, block, [], block, []
+        # district, block:[], block:[]
+#        newRow = ""
+#        for district, blocks in dict(districts).items():
+#            newRow += str(district) + ", "
+#            for blockId, neighbors in dict(blocks).items():
+#                newRow += str(blockId) + ":" + str(neighbors) + ", "
+#            result.write(newRow + "\n")
+#            newRow = ""
 def create_csv(districts, choice):
     mainDir = path.cwd().as_posix().removesuffix("/Reasonable_Gerrymandering").replace("\\", "/") + "/"
     currDir = path.cwd().as_posix().replace("\\", "/") + "/"
     result_dir = currDir + "gerrymandered_results"
 
-    if(not path.exists(path(result_dir))):
+    if not path.exists(path(result_dir)):
         path.mkdir(path(result_dir))
-    
+
     choice = str(choice[-35:]).removesuffix("results.csv") + "gerrymandered.csv"
-    with open(result_dir + "/" + choice, "+w") as result:
-        # ~~~~~~ create a csv here ~~~~~~
-        # district, block, [], block, []
-        # district, block:[], block:[]
-        newRow = ""
+    with open(result_dir + "/" + choice, "w") as result:
         for district, blocks in dict(districts).items():
-            newRow += str(district) + ", "
+            parts = [str(district)]
             for blockId, neighbors in dict(blocks).items():
-                newRow += str(blockId) + ":" + str(neighbors) + ", "
-            result.write(newRow + "\n")
-            newRow = ""
+                parts.append(str(blockId) + ":" + str(neighbors))
+            result.write(", ".join(parts) + "\n")
 ##################################################################################################
 #Start of program, get the files and ask which files to use
 result_files = GetFiles()
