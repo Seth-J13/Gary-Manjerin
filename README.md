@@ -102,4 +102,4 @@ Gary-Manjerin/
 
 - The model currently predicts a two-party split only (Democrat + Republican = 1.0). Third-party modeling would require additional regressors.
 - Democrat share is clamped to [0.0001, 0.9999] to avoid degenerate outputs.
-- The gerrymandering algorithm includes debug logging that prints progress every 100 blocks assigned.
+- The gerrymandering algorithm includes debug logging that prints progress.
