@@ -1,9 +1,0 @@
-Note to Seth and Ethan:
-"Export your AI conversations however you like, but in the file name, include your first
-   name, the LLM name, the date(s) the conversation took place, and a VERY brief
-   description of what the conversation was over."
-   
-"A good file name for AI documentation would be like
-   alex_gemini(3.5 thinking)_may_20-22_2026_shape-parser-debugging.pdf
-   or something close to that. This will make it easiest for Nix to read through it and for
-   yourself and other team members to find past conversations if we need them."

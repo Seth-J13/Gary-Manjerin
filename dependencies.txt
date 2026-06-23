@@ -1,2 +1,4 @@
 pyshp
 pathlib
+numpy
+scikit-learn
