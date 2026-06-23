@@ -1,5 +1,6 @@
 Data_Collection_and_Formatting/testing
 Data_Collection_and_Formatting/training
 Predictive_Model/prediction
+Reasonable_Gerrymandering/gerrymandered_results/*.csv
 .vscode/*
 shapefiles.csv
