@@ -1,6 +1,9 @@
 Data_Collection_and_Formatting/testing
 Data_Collection_and_Formatting/training
+Data_Collection_and_Formatting/__pycache__/*.pyc
 Predictive_Model/prediction
+Predictive_Model/__pycache__/*.pyc
 Reasonable_Gerrymandering/gerrymandered_results/*.csv
+Reasonable_Gerrymandering/__pycache__/*.pyc
 .vscode/*
 shapefiles.csv

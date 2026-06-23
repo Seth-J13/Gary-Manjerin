@@ -108,6 +108,7 @@ def gerrymander():
     result_files = GetFiles()
     num = 0
     #prints out the list of files.
+    print("\n\n")
     for x in result_files:
         print(str(num) + ": " + str(x)[-35:])
         num += 1
@@ -395,6 +396,6 @@ def gerrymander():
     print(f"[DEBUG] Spread phase complete after {loop_count} outer loop iteration(s). "
         f"{len(assigned)}/{total_blocks} blocks assigned across {len(districts)} districts.")
 
-    print("Beginning data conversion...\nThis may take up 10 minutes")
+    print("Beginning data conversion...\nThis may take up to 10 minutes")
     create_csv(districts, str(result_files[choice]))
     print("Finished")
