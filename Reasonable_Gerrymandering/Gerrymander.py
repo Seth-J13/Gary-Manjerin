@@ -116,7 +116,7 @@ def create_csv(districts, choice):
         for district, blocks in dict(districts).items():
             parts = [str(district)]
             for blockId, neighbors in dict(blocks).items():
-                parts.append(str(blockId) + ":" + str(neighbors).replace(",", "|"))
+                parts.append(str(blockId) + ":" + str(neighbors).replace(", ", "|"))
             result.write(", ".join(parts) + "\n")
 ##################################################################################################
 #Start of program, get the files and ask which files to use
