@@ -1,7 +1,15 @@
 # Gary-Manjerin
 
 **SU26 AI Project 1** — A three-stage pipeline for electoral data processing, vote share prediction, and algorithmic redistricting.
-**Authors** — Seth Jack, Alexander Stockton, Ethan Hill
+
+---
+
+## Authors
+
+- Seth Jack
+- Alexander Stockton
+- Ethan Hill
+
 ---
 
 ## Overview
@@ -95,4 +103,3 @@ Gary-Manjerin/
 - The model currently predicts a two-party split only (Democrat + Republican = 1.0). Third-party modeling would require additional regressors.
 - Democrat share is clamped to [0.0001, 0.9999] to avoid degenerate outputs.
 - The gerrymandering algorithm includes debug logging that prints progress every 100 blocks assigned.
-- This is a dev branch — expect rough edges and debug output in the console.
