@@ -1,7 +1,7 @@
 # Gary-Manjerin
 
 **SU26 AI Project 1** — A three-stage pipeline for electoral data processing, vote share prediction, and algorithmic redistricting.
-
+**Authors** — Seth Jack, Alexander Stockton, Ethan Hill
 ---
 
 ## Overview
@@ -46,11 +46,12 @@ Reads prediction CSVs and builds district maps using a greedy frontier-expansion
 
 ## Requirements
 
-- Python 3.x
+- Python 3.13+
 - `numpy`
 - `scikit-learn`
 - `pyshp` (`shapefile`)
 - `tkinter` (standard library, required for file-picker dialog)
+- `pathlib` (standard library, required for file-management)
 
 Install dependencies:
 
