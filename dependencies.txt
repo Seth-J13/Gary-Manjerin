@@ -2,4 +2,3 @@ pyshp
 pathlib
 numpy
 scikit-learn
-pxng
