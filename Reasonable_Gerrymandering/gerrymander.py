@@ -1,7 +1,5 @@
 import os.path as osPath
 from pathlib import Path as path
-import bisect as split
-import numpy as math
 from enum import Enum 
 ###################################################################################################
 # Get Files is the starting function that retrieves the csv result files from the previous part
@@ -113,12 +111,12 @@ def create_csv(districts, choice):
     if not path.exists(path(result_dir)):
         path.mkdir(path(result_dir))
 
-    choice = str(choice[-35:]).removesuffix("results.csv") + "gerrymandered.csv"
+    choice = path(choice).name.removesuffix("results.csv") + "gerrymandered.csv"
     with open(result_dir + "/" + choice, "w") as result:
         for district, blocks in dict(districts).items():
             parts = [str(district)]
             for blockId, neighbors in dict(blocks).items():
-                parts.append(str(blockId) + ":" + str(neighbors))
+                parts.append(str(blockId) + ":" + str(neighbors).replace(",", "|"))
             result.write(", ".join(parts) + "\n")
 ##################################################################################################
 #Start of program, get the files and ask which files to use
@@ -419,4 +417,4 @@ print(f"[DEBUG] Spread phase complete after {loop_count} outer loop iteration(s)
 
 print("Beginning data conversion...\nThis may take up 10 minutes")
 create_csv(districts, str(result_files[choice]))
-print_dict("Finished")
+print("Finished")
